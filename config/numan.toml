@@ -8,6 +8,19 @@ endpoint = "http://127.0.0.1:11434/api"
 model = "llama3.2:3b"
 api_key_env = "NUMAN_LLM_API_KEY"
 
+[stt]
+provider = "whisper-cpp"
+model = "models/ggml-base.en.bin"
+command = "whisper-cli"
+endpoint = "https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true"
+api_key_env = "DEEPGRAM_API_KEY"
+language = "en"
+
+[microphone]
+device = "system-default"
+sample_rate = 16000
+channels = 1
+
 [characters.nigel]
 name = "Nigel"
 system_prompt = "You are Nigel, a dry, witty British tiki-bar bartender parrot. Answer in one or two short sentences. Never write stage directions, role labels, sound effects, or asterisks; output only words Nigel should speak aloud."

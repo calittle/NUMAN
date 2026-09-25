@@ -12,13 +12,15 @@ class AudioDevice:
     name: str
     host_api: str
     output_channels: int
+    input_channels: int = 0
     is_default: bool = False
 
 
 def list_audio_outputs() -> tuple[AudioDevice, ...]:
     """Return the OS-default fallback plus any addressable outputs."""
     fallback = AudioDevice(
-        None, "system-default", "System default", "operating-system", 2, True
+        None, "system-default", "System default", "operating-system", 2,
+        is_default=True,
     )
     try:
         import sounddevice as sd
@@ -44,10 +46,47 @@ def list_audio_outputs() -> tuple[AudioDevice, ...]:
                 name=str(raw["name"]),
                 host_api=host_name,
                 output_channels=channels,
+                input_channels=int(raw["max_input_channels"]),
                 is_default=index == default_output,
             )
         )
     return (fallback, *outputs)
+
+
+def list_audio_inputs() -> tuple[AudioDevice, ...]:
+    fallback = AudioDevice(
+        None, "system-default", "System default", "operating-system", 0,
+        input_channels=1, is_default=True,
+    )
+    try:
+        import sounddevice as sd
+    except ImportError:
+        return (fallback,)
+    host_apis = sd.query_hostapis()
+    default_input = sd.default.device[0]
+    inputs = []
+    for index, raw in enumerate(sd.query_devices()):
+        channels = int(raw["max_input_channels"])
+        if channels <= 0:
+            continue
+        host_name = str(host_apis[int(raw["hostapi"])]["name"])
+        inputs.append(AudioDevice(
+            index,
+            f"{host_name}::{raw['name']}",
+            str(raw["name"]),
+            host_name,
+            int(raw["max_output_channels"]),
+            input_channels=channels,
+            is_default=index == default_input,
+        ))
+    return (fallback, *inputs)
+
+
+def resolve_input_device(selector: str) -> int | None:
+    matches = [device for device in list_audio_inputs() if device.selector == selector]
+    if not matches:
+        raise LookupError(f"configured microphone is unavailable: {selector}")
+    return matches[0].device_index
 
 
 def resolve_audio_device(selector: str) -> int:

@@ -86,5 +86,31 @@ concurrently. It avoids playing the same opener twice in a row within a running
 process. Routine, exact-cache, pool, and structured responses do not stall. CLI
 and API results expose `stall_played` for diagnosis.
 
+## Voice input
+
+NUMAN uses local whisper.cpp speech recognition by default, with Deepgram
+retained as an optional provider. The checked-in configuration expects the
+English base model at `models/ggml-base.en.bin` (models are intentionally not
+committed). Inspect and test the input pipeline independently:
+
+```bash
+numan devices inputs
+numan stt status
+numan transcribe path/to/recording.wav
+```
+
+Use interactive push-to-talk, transcribe locally, and send the result through
+Nigel's normal response pipeline. Press Enter once to start and again to stop:
+
+```bash
+numan listen --live
+```
+
+For automation, `numan listen --seconds 6 --live` retains fixed-window capture.
+
+Local transcription deliberately runs on CPU so it does not contend with
+Ollama for Metal memory. Set `[stt].provider = "deepgram"` to use the optional
+prerecorded-audio adapter with `DEEPGRAM_API_KEY`.
+
 The Nigel snapshot in `../nigel` is a behavioral reference. NUMAN code lives
 only in this repository.

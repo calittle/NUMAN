@@ -25,6 +25,13 @@ from .engine.repositories import JsonExactCache, JsonResponsePools
 from .orchestration import Orchestrator
 from .performance import NIGEL_STALLING_PLAN
 from .testing import FakeAudioBackend, FakeVoiceProvider
+from .transcription import (
+    DeepgramConfig,
+    DeepgramSTTProvider,
+    STTProvider,
+    WhisperCppConfig,
+    WhisperCppSTTProvider,
+)
 from .voice import EdgeTTSVoiceProvider, VoiceProfile
 from .conversations import InMemoryConversationStore
 
@@ -115,6 +122,22 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
     )
 
 
+def build_stt_provider(config: NumanConfig) -> STTProvider:
+    if config.stt.provider == "whisper-cpp":
+        model = Path(config.stt.model)
+        if not model.is_absolute():
+            model = PROJECT_ROOT / model
+        return WhisperCppSTTProvider(WhisperCppConfig(
+            model_path=model,
+            command=config.stt.command,
+            language=config.stt.language,
+        ))
+    return DeepgramSTTProvider(DeepgramConfig(
+        endpoint=config.stt.endpoint,
+        api_key_env=config.stt.api_key_env,
+    ))
+
+
 def live_environment_errors(config: NumanConfig) -> list[str]:
     errors = []
     if importlib.util.find_spec("edge_tts") is None:
@@ -126,3 +149,10 @@ def live_environment_errors(config: NumanConfig) -> list[str]:
         if route.backend == "sounddevice" and route.device not in available:
             errors.append(f"audio route {route.id!r} device is unavailable: {route.device}")
     return errors
+
+
+def stt_environment_errors(config: NumanConfig) -> list[str]:
+    if config.stt.provider == "whisper-cpp":
+        provider = build_stt_provider(config)
+        return provider.status_errors()
+    return []

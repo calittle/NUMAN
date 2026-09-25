@@ -55,10 +55,29 @@ class LLMConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class STTConfig:
+    provider: str
+    model: str
+    command: str
+    endpoint: str
+    api_key_env: str
+    language: str
+
+
+@dataclass(frozen=True, slots=True)
+class MicrophoneConfig:
+    device: str
+    sample_rate: int
+    channels: int
+
+
+@dataclass(frozen=True, slots=True)
 class NumanConfig:
     default_character: str
     default_actor: str
     llm: LLMConfig
+    stt: STTConfig
+    microphone: MicrophoneConfig
     characters: Mapping[str, CharacterConfig]
     voices: Mapping[str, VoiceConfig]
     audio_routes: Mapping[str, AudioRouteConfig]
@@ -102,6 +121,18 @@ class NumanConfig:
         if self.llm.provider == "openai-compatible":
             if not self.llm.endpoint or not self.llm.model:
                 errors.append("openai-compatible LLM requires endpoint and model")
+        if self.stt.provider not in {"whisper-cpp", "deepgram"}:
+            errors.append(f"unsupported STT provider {self.stt.provider!r}")
+        if self.stt.provider == "whisper-cpp" and (
+            not self.stt.command or not self.stt.model
+        ):
+            errors.append("whisper-cpp STT requires command and model")
+        if self.stt.provider == "deepgram" and (
+            not self.stt.endpoint or not self.stt.api_key_env
+        ):
+            errors.append("Deepgram STT requires endpoint and API key environment name")
+        if self.microphone.sample_rate <= 0 or self.microphone.channels != 1:
+            errors.append("microphone requires a positive sample rate and one channel")
         if errors:
             raise ConfigurationError("; ".join(errors))
 
@@ -115,6 +146,8 @@ def load_config(path: str | Path) -> NumanConfig:
     try:
         runtime = raw["runtime"]
         llm_raw = raw["llm"]
+        stt_raw = raw["stt"]
+        microphone_raw = raw["microphone"]
         characters = {
             key: CharacterConfig(
                 id=key,
@@ -161,6 +194,19 @@ def load_config(path: str | Path) -> NumanConfig:
                 endpoint=str(llm_raw.get("endpoint", "")),
                 model=str(llm_raw.get("model", "")),
                 api_key_env=_string(llm_raw, "api_key_env"),
+            ),
+            stt=STTConfig(
+                provider=_string(stt_raw, "provider"),
+                model=_string(stt_raw, "model"),
+                command=_string(stt_raw, "command"),
+                endpoint=_string(stt_raw, "endpoint"),
+                api_key_env=_string(stt_raw, "api_key_env"),
+                language=_string(stt_raw, "language"),
+            ),
+            microphone=MicrophoneConfig(
+                device=_string(microphone_raw, "device"),
+                sample_rate=int(microphone_raw.get("sample_rate", 16_000)),
+                channels=int(microphone_raw.get("channels", 1)),
             ),
             characters=characters,
             voices=voices,
