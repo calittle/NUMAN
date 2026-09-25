@@ -77,6 +77,37 @@ ollama pull llama3.2:3b
 numan llm status
 ```
 
+## Characters and actors
+
+The checked-in development installation has two independently routed
+characters: Nigel (`nigel-dev`) and Polly (`polly-dev`). They have distinct
+prompts, voice profiles, response caches, pools, wake targets, conversation
+history, and logical audio routes. Both development routes currently use the
+system-default device; assign each route a `sounddevice` selector when the
+physical birds have separate outputs.
+
+Selecting a character automatically selects its sole configured actor:
+
+```bash
+numan ask --character polly "Who are you?"
+numan ask --character polly --live "Hello"
+```
+
+If a character later has multiple physical actors, `--actor` becomes required.
+Cocktail recipes are intentionally shared structured knowledge, while each
+character owns how it responds through its prompt and character data.
+
+### Tiki voice console
+
+Each configured voice can use a commented `[voices.<id>.tiki_console]` table
+instead of maintaining a raw ffmpeg expression. Its controls include perch
+pitch, beak bite, feather sparkle, coconut-radio crunch, and rum-barrel
+loudness. The checked-in values reproduce the current Nigel and Polly sounds;
+edit a value and use `numan ask --character <id> --live "Hello"` to audition
+it. Configuration validation rejects unsafe ranges. Advanced profiles may omit
+`tiki_console` and provide `ffmpeg_filter` directly as an escape hatch, but a
+profile cannot use both.
+
 The `fake` and `openai-compatible` providers remain available for tests and
 alternate deployments.
 
@@ -121,6 +152,11 @@ Wake phrases are configured per target and compiled for sherpa-onnx at runtime:
 phrases = ["hey nigel"]
 character = "nigel"
 actor = "nigel-dev"
+
+[wake.targets.polly]
+phrases = ["hey polly"]
+character = "polly"
+actor = "polly-dev"
 ```
 
 Additional targets use the same single microphone stream. Duplicate phrases,

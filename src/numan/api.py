@@ -6,7 +6,7 @@ from dataclasses import asdict
 from pathlib import Path
 from pydantic import BaseModel
 
-from .application import PROJECT_ROOT, Application, build_application
+from .application import PROJECT_ROOT, Application, build_application, resolve_actor_id
 from .configuration import load_config
 from .devices import list_audio_outputs
 from .engine.models import Utterance
@@ -70,11 +70,13 @@ def create_app(
         if not question:
             raise HTTPException(status_code=400, detail="question must not be empty")
         character_id = request.character_id or runtime.config.default_character
-        actor_id = request.actor_id or runtime.config.default_actor
         character = runtime.characters.get(character_id)
         if character is None:
             raise HTTPException(status_code=404, detail=f"unknown character: {character_id}")
         try:
+            actor_id = resolve_actor_id(
+                runtime.config, character_id, request.actor_id
+            )
             result = await runtime.orchestrator.perform(
                 Utterance(question, character_id, request.conversation_id),
                 character,

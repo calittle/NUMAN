@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import random
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter_ns
@@ -45,7 +46,7 @@ class Orchestrator:
         actors: ActorRegistry,
         conversations: InMemoryConversationStore | None = None,
         show_control: ShowControlProvider | None = None,
-        stalling: StallingPlan | None = None,
+        stalling: StallingPlan | Mapping[str, StallingPlan] | None = None,
     ) -> None:
         self._dispatcher = dispatcher
         self._voice = voice
@@ -53,20 +54,26 @@ class Orchestrator:
         self._conversations = conversations or InMemoryConversationStore()
         self._show_control = show_control or NullShowControlProvider()
         self._stalling = stalling
-        self._last_stall_asset: Path | None = None
+        self._last_stall_assets: dict[str, Path] = {}
 
-    def _stall_asset(self) -> Path | None:
-        if self._stalling is None:
+    def _stall_asset(self, character_id: str) -> Path | None:
+        plan = (
+            self._stalling.get(character_id)
+            if isinstance(self._stalling, Mapping)
+            else self._stalling
+        )
+        if plan is None:
             return None
         available = [
-            cue.audio_asset for cue in self._stalling.openers if cue.audio_asset.is_file()
+            cue.audio_asset for cue in plan.openers if cue.audio_asset.is_file()
         ]
-        if len(available) > 1 and self._last_stall_asset in available:
-            available.remove(self._last_stall_asset)
+        last = self._last_stall_assets.get(character_id)
+        if len(available) > 1 and last in available:
+            available.remove(last)
         if not available:
             return None
         selected = random.choice(available)
-        self._last_stall_asset = selected
+        self._last_stall_assets[character_id] = selected
         return selected
 
     async def perform(
@@ -87,7 +94,7 @@ class Orchestrator:
         def on_rule_start(rule_name: str) -> None:
             nonlocal stall_task
             if rule_name == "llm_fallback":
-                stall_asset = self._stall_asset()
+                stall_asset = self._stall_asset(character.id)
             else:
                 stall_asset = None
             if stall_asset is not None:

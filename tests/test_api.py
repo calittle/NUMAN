@@ -27,9 +27,31 @@ class ApiTests(unittest.IsolatedAsyncioTestCase):
         })
         self.assertEqual(response.status_code, 200)
         body = response.json()
-        self.assertEqual(body["response"], "Welcome to the bar.")
+        self.assertIn(body["response"], {
+            "Welcome to the bar. Mind the rigging and lower your expectations.",
+            "Ahoy. If you're here for charm, Polly's over there. If you're here for rum, we may talk.",
+            "Well, look what the tide dragged in. Pull up a stool.",
+            "Evening. State your poison before I die of suspense.",
+            "Welcome aboard, mate. Your first bad decision is always the hardest.",
+            "Hello there. Don't look so nervous; I only bite corks.",
+            "Good to see you. Not that I'll be making a habit of saying so.",
+            "Come in, come in. The rum's warm and the company is questionable.",
+        })
         self.assertEqual(body["source"], "routine")
         self.assertEqual(body["conversation_id"], "table-4")
+
+    async def test_character_selects_its_actor_and_private_cache(self):
+        response = await self.client.post("/ask", json={
+            "question": "Who are you?",
+            "character_id": "polly",
+            "conversation_id": "table-4",
+        })
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["actor_id"], "polly-dev")
+        self.assertEqual(body["route_id"], "polly-development")
+        self.assertEqual(body["source"], "exact_cache")
+        self.assertTrue(body["response"].startswith("I'm Polly"))
 
     async def test_ask_validation_and_unknown_actor(self):
         self.assertEqual(

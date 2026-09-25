@@ -15,6 +15,7 @@ from .application import (
     build_wake_config,
     build_wake_registry,
     live_environment_errors,
+    resolve_actor_id,
     stt_environment_errors,
 )
 from .configuration import ConfigurationError, load_config
@@ -126,7 +127,7 @@ async def _perform_question(args, question: str) -> int:
         if errors:
             raise ConfigurationError("; ".join(errors))
     character_id = args.character or config.default_character
-    actor_id = args.actor or config.default_actor
+    actor_id = resolve_actor_id(config, character_id, args.actor)
     application = build_application(config, live=args.live)
     try:
         character = application.characters[character_id]

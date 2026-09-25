@@ -36,6 +36,30 @@ class VoiceProviderError(RuntimeError):
     pass
 
 
+def tiki_console_filter(
+    *,
+    sample_rate: int,
+    perch_pitch_semitones: float,
+    beak_bite_hz: int,
+    beak_bite_db: float,
+    beak_bite_width: float,
+    feather_sparkle_hz: int,
+    feather_sparkle_db: float,
+    coconut_radio_bits: int,
+    rum_barrel_lufs: float,
+) -> str:
+    """Translate friendly character-voice controls into an ffmpeg filter graph."""
+    pitch = f"{perch_pitch_semitones:g}"
+    return (
+        f"asetrate={sample_rate}*2^({pitch}/12),aresample={sample_rate},"
+        f"atempo=1/2^({pitch}/12),"
+        f"equalizer=f={beak_bite_hz}:t=q:w={beak_bite_width:g}:g={beak_bite_db:g},"
+        f"equalizer=f={feather_sparkle_hz}:t=q:w=1:g={feather_sparkle_db:g},"
+        f"acrusher=bits={coconut_radio_bits}:mode=log:aa=1,"
+        f"loudnorm=I={rum_barrel_lufs:g}:LRA=7:TP=-1.5"
+    )
+
+
 class EdgeTTSVoiceProvider:
     """Render speech with edge-tts and optional ffmpeg character processing."""
 

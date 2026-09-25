@@ -1,6 +1,7 @@
 .venv/
 __pycache__/
 .pytest_cache/
+.DS_Store
 *.py[cod]
 models/*.bin
 models/sherpa-onnx-*/

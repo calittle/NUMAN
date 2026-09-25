@@ -22,6 +22,18 @@ class CharacterConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class TikiConsoleConfig:
+    perch_pitch_semitones: float
+    beak_bite_hz: int
+    beak_bite_db: float
+    beak_bite_width: float
+    feather_sparkle_hz: int
+    feather_sparkle_db: float
+    coconut_radio_bits: int
+    rum_barrel_lufs: float
+
+
+@dataclass(frozen=True, slots=True)
 class VoiceConfig:
     id: str
     provider: str
@@ -29,6 +41,7 @@ class VoiceConfig:
     sample_rate: int
     channels: int
     ffmpeg_filter: str | None
+    tiki_console: TikiConsoleConfig | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,12 +121,40 @@ class NumanConfig:
             errors.append(f"unknown default character {self.default_character!r}")
         if self.default_actor not in self.actors:
             errors.append(f"unknown default actor {self.default_actor!r}")
+        elif (
+            self.default_character in self.characters
+            and self.actors[self.default_actor].character != self.default_character
+        ):
+            errors.append("default actor does not represent the default character")
         for character in self.characters.values():
             if character.voice_profile not in self.voices:
                 errors.append(
                     f"character {character.id!r} references unknown voice "
                     f"{character.voice_profile!r}"
                 )
+        for voice in self.voices.values():
+            console = voice.tiki_console
+            if console is not None and voice.ffmpeg_filter:
+                errors.append(
+                    f"voice {voice.id!r} cannot use both tiki_console and ffmpeg_filter"
+                )
+            if console is not None:
+                if not -12 <= console.perch_pitch_semitones <= 12:
+                    errors.append(f"voice {voice.id!r} perch pitch must be -12 to 12")
+                if not 100 <= console.beak_bite_hz <= 12_000:
+                    errors.append(f"voice {voice.id!r} beak bite frequency is out of range")
+                if not -30 <= console.beak_bite_db <= 30:
+                    errors.append(f"voice {voice.id!r} beak bite must be -30 to 30 dB")
+                if not 0.1 <= console.beak_bite_width <= 10:
+                    errors.append(f"voice {voice.id!r} beak bite width must be 0.1 to 10")
+                if not 100 <= console.feather_sparkle_hz <= 12_000:
+                    errors.append(f"voice {voice.id!r} feather sparkle frequency is out of range")
+                if not -30 <= console.feather_sparkle_db <= 30:
+                    errors.append(f"voice {voice.id!r} feather sparkle must be -30 to 30 dB")
+                if not 2 <= console.coconut_radio_bits <= 16:
+                    errors.append(f"voice {voice.id!r} coconut radio must be 2 to 16 bits")
+                if not -30 <= console.rum_barrel_lufs <= -5:
+                    errors.append(f"voice {voice.id!r} rum barrel must be -30 to -5 LUFS")
         for actor in self.actors.values():
             if actor.character not in self.characters:
                 errors.append(
@@ -219,6 +260,7 @@ def load_config(path: str | Path) -> NumanConfig:
                 sample_rate=int(value.get("sample_rate", 24_000)),
                 channels=int(value.get("channels", 1)),
                 ffmpeg_filter=value.get("ffmpeg_filter"),
+                tiki_console=_tiki_console(value.get("tiki_console")),
             )
             for key, value in _table(raw, "voices").items()
         }
@@ -300,3 +342,20 @@ def _string(raw: Mapping[str, Any], key: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise TypeError(f"{key} must be a non-empty string")
     return value
+
+
+def _tiki_console(raw: Any) -> TikiConsoleConfig | None:
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        raise TypeError("tiki_console must be a table")
+    return TikiConsoleConfig(
+        perch_pitch_semitones=float(raw["perch_pitch_semitones"]),
+        beak_bite_hz=int(raw["beak_bite_hz"]),
+        beak_bite_db=float(raw["beak_bite_db"]),
+        beak_bite_width=float(raw["beak_bite_width"]),
+        feather_sparkle_hz=int(raw["feather_sparkle_hz"]),
+        feather_sparkle_db=float(raw["feather_sparkle_db"]),
+        coconut_radio_bits=int(raw["coconut_radio_bits"]),
+        rum_barrel_lufs=float(raw["rum_barrel_lufs"]),
+    )

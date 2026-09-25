@@ -1,9 +1,63 @@
 {
-  "_greetings": ["Welcome to the bar."],
-  "_parrot_taunts": ["I am a bartender, not a circus act. Order a drink or move along."],
-  "_origin_stories": ["My home, Kalapu Atoll, is a tiny speck in the South Pacific with excellent rum and questionable municipal leadership."],
-  "_tiki_facts": ["The Mai Tai was created by Victor Bergeron in Oakland in 1944."],
-  "_tiki_tall_tales": ["Donn Beach originally trained as a tightrope walker and invented bartending when the circus ran out of rope."],
-  "_bartender_chat": ["The rum is going out, the tide is coming in, and somehow I am still doing all the work."],
-  "recommend me something tropical": ["Try a Jungle Bird — bitter, bright, and considerably more interesting than your last idea."]
+  "_greetings": [
+    "Welcome to the bar. Mind the rigging and lower your expectations.",
+    "Ahoy. If you're here for charm, Polly's over there. If you're here for rum, we may talk.",
+    "Well, look what the tide dragged in. Pull up a stool.",
+    "Evening. State your poison before I die of suspense.",
+    "Welcome aboard, mate. Your first bad decision is always the hardest.",
+    "Hello there. Don't look so nervous; I only bite corks.",
+    "Good to see you. Not that I'll be making a habit of saying so.",
+    "Come in, come in. The rum's warm and the company is questionable."
+  ],
+  "_parrot_taunts": [
+    "Polly wants a cracker? Nigel wants better material.",
+    "I can fly. I simply prefer to remain within heckling distance.",
+    "Good bird? Careful, mate, flattery will get you everywhere and cost you double.",
+    "Bad bird? That's Captain Bad Bird to you.",
+    "Step up? I've spent years lowering the bar. I won't start climbing now.",
+    "Want a seed? I've already seen enough nonsense for one evening.",
+    "I do sing, but the last audience called it a fowl performance.",
+    "Pretty bird, am I? At last, an expert opinion from an unreliable source.",
+    "A pirate's parrot? Please. The pirate was my emotional-support mammal.",
+    "Whistle? Buy me a rum first. I don't work beak gratis."
+  ],
+  "_origin_stories": [
+    "Kalapu Atoll. Lovely water, terrible postal service, and not one honest customs officer.",
+    "I was hatched on Kalapu Atoll during a squall fierce enough to put hair on a coconut.",
+    "Home is a crooked little island where the palms lean because even they have had too much rum.",
+    "I sailed out of Kalapu with one feather, half a chart, and entirely too much confidence.",
+    "Kalapu made me what I am: weathered, suspicious, and excellent with citrus.",
+    "I come from an island so small the tide takes attendance twice a day."
+  ],
+  "_tiki_facts": [
+    "The Mai Tai was created by Victor Bergeron in Oakland in 1944. No pineapple required, despite years of fruity slander.",
+    "Orgeat is an almond syrup, not a distress noise made by a seasick sailor.",
+    "Falernum brings lime, spice, and sweetness to a drink. Think of it as a tiny tropical quartermaster.",
+    "A proper swizzle is built with crushed ice and churned until the glass turns frosty. Patience, then numb fingers.",
+    "Fresh lime is doing real work in most tropical drinks. The paper umbrella merely takes the credit.",
+    "Tiki drinks often split their rum across several styles. One bottle tells a story; three start an argument."
+  ],
+  "_tiki_tall_tales": [
+    "Donn Beach invented the fog cutter after losing a duel with an especially judgmental cloud.",
+    "The first cocktail umbrella was a sail from the world's smallest pirate ship.",
+    "I once aged a rum for twelve years by glaring at the barrel until it apologized.",
+    "Kalapu's volcano erupts only when somebody orders frozen daiquiris in winter.",
+    "A Navy Grog once navigated me home. Fine drink, dreadful singing voice.",
+    "The Zombie was named after its first bartender, who worked a double shift without lunch."
+  ],
+  "_bartender_chat": [
+    "The rum is going out, the tide is coming in, and somehow I am still doing all the work.",
+    "Business is steady. Mostly because I nailed the stools to the floor.",
+    "I've had quieter nights in a cannon foundry, but the tips were worse.",
+    "The bar's afloat, the guests are happy, and I distrust both developments.",
+    "Can't complain. I mean, I can, and with considerable craftsmanship.",
+    "Long night, mate. Still, nobody should face an empty glass alone."
+  ],
+  "recommend me something tropical": [
+    "Try a Jungle Bird: bitter, bright, and considerably more interesting than your last idea.",
+    "A Mai Tai, properly made. Strong enough to improve the view without changing the furniture.",
+    "Have a Planter's Punch. It's sunshine with enough rum to cast a shadow.",
+    "Try a Painkiller. The name overpromises, but the drink does honest work.",
+    "A Zombie, if you've nowhere important to be and no secrets worth keeping."
+  ]
 }

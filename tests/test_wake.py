@@ -108,8 +108,11 @@ class SpeechCaptureTests(unittest.TestCase):
 class WakeConfigurationTests(unittest.TestCase):
     def test_checked_in_target_builds(self):
         config = load_config(PROJECT_ROOT / "config/numan.toml")
-        target = build_wake_registry(config).resolve("hey nigel")
-        self.assertEqual((target.character_id, target.actor_id), ("nigel", "nigel-dev"))
+        registry = build_wake_registry(config)
+        nigel = registry.resolve("hey nigel")
+        polly = registry.resolve("hey polly")
+        self.assertEqual((nigel.character_id, nigel.actor_id), ("nigel", "nigel-dev"))
+        self.assertEqual((polly.character_id, polly.actor_id), ("polly", "polly-dev"))
 
     def test_duplicate_configured_phrase_fails_validation(self):
         source = (PROJECT_ROOT / "config/numan.toml").read_text(encoding="utf-8")

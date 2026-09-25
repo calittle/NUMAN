@@ -6,13 +6,7 @@ from numan.engine.dispatch import Dispatcher
 from numan.engine.providers import LLMProvider, StructuredDataProvider
 from numan.engine.repositories import ExactCacheRepository, ResponsePoolRepository
 from numan.conversations import InMemoryConversationStore
-from numan.engine.rules import (
-    CharacterRoutineRule,
-    ProviderLLMFallbackRule,
-    ProviderStructuredLookupRule,
-    RepositoryExactCacheRule,
-    RepositoryResponsePoolRule,
-)
+from .dispatch import build_character_dispatcher
 
 from .nigel import NIGEL_DISPATCH_POLICY
 
@@ -26,13 +20,12 @@ def build_nigel_dispatcher(
     conversations: InMemoryConversationStore | None = None,
     chooser=None,
 ) -> Dispatcher:
-    keyword = {"chooser": chooser} if chooser is not None else {}
-    return Dispatcher(
-        [
-            CharacterRoutineRule(NIGEL_DISPATCH_POLICY, response_pools, **keyword),
-            RepositoryExactCacheRule(exact_cache),
-            RepositoryResponsePoolRule(response_pools, **keyword),
-            ProviderStructuredLookupRule(structured_data),
-            ProviderLLMFallbackRule(llm, conversations),
-        ]
+    return build_character_dispatcher(
+        policy=NIGEL_DISPATCH_POLICY,
+        exact_cache=exact_cache,
+        response_pools=response_pools,
+        structured_data=structured_data,
+        llm=llm,
+        conversations=conversations,
+        chooser=chooser,
     )

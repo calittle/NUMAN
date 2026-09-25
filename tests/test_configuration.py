@@ -12,6 +12,12 @@ class ConfigurationTests(unittest.TestCase):
         application = build_application(config, live=False)
         self.assertEqual(config.default_character, "nigel")
         self.assertEqual(application.actors.get("nigel-dev").character_id, "nigel")
+        self.assertEqual(set(application.characters), {"nigel", "polly"})
+        self.assertEqual(application.actors.get("polly-dev").character_id, "polly")
+        self.assertEqual(
+            config.voices["nigel-edge-ryan-shrill"].tiki_console.coconut_radio_bits,
+            6,
+        )
 
     def test_unknown_actor_route_is_rejected(self):
         source = (PROJECT_ROOT / "config/numan.toml").read_text(encoding="utf-8")

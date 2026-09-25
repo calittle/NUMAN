@@ -9,7 +9,9 @@ from pathlib import Path
 
 from .actors import ActorRegistry, SquawkerActor
 from .audio import QueuedAudioOutput, SoundDeviceBackend, SystemAudioBackend
-from .characters.nigel_dispatch import build_nigel_dispatcher
+from .characters.dispatch import CharacterDispatcher, build_character_dispatcher
+from .characters.nigel import NIGEL_DISPATCH_POLICY
+from .characters.polly import POLLY_DISPATCH_POLICY
 from .configuration import ConfigurationError, NumanConfig
 from .devices import list_audio_outputs
 from .engine.models import Character
@@ -32,7 +34,7 @@ from .transcription import (
     WhisperCppConfig,
     WhisperCppSTTProvider,
 )
-from .voice import EdgeTTSVoiceProvider, VoiceProfile
+from .voice import EdgeTTSVoiceProvider, VoiceProfile, tiki_console_filter
 from .wake import SherpaWakeConfig, WakeRegistry, WakeTarget
 from .conversations import InMemoryConversationStore
 
@@ -59,10 +61,6 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
         )
         for item in config.characters.values()
     }
-    if set(characters) != {"nigel"}:
-        raise ConfigurationError("this migration stage supports the Nigel dispatch policy only")
-
-    pools = JsonResponsePools(PROJECT_ROOT / "data/nigel/response_pools.json")
     if config.llm.provider == "ollama":
         llm_provider = OllamaLLMProvider(OllamaConfig(
             base_url=config.llm.endpoint,
@@ -76,19 +74,51 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
         ))
     else:
         llm_provider = FakeLLMProvider("This is the development LLM fallback.")
-    dispatcher = build_nigel_dispatcher(
-        exact_cache=JsonExactCache(PROJECT_ROOT / "data/nigel/exact_cache.json"),
-        response_pools=pools,
-        structured_data=JsonCocktailProvider(PROJECT_ROOT / "data/cocktails/recipes.json"),
-        llm=llm_provider,
-        conversations=conversations,
+    policies = {
+        "nigel": NIGEL_DISPATCH_POLICY,
+        "polly": POLLY_DISPATCH_POLICY,
+    }
+    unsupported = set(characters) - set(policies)
+    if unsupported:
+        names = ", ".join(sorted(unsupported))
+        raise ConfigurationError(f"no dispatch policy configured for: {names}")
+    structured_data = JsonCocktailProvider(
+        PROJECT_ROOT / "data/cocktails/recipes.json"
     )
+    dispatcher = CharacterDispatcher({
+        character_id: build_character_dispatcher(
+            policy=policies[character_id],
+            exact_cache=JsonExactCache(
+                PROJECT_ROOT / f"data/{character_id}/exact_cache.json"
+            ),
+            response_pools=JsonResponsePools(
+                PROJECT_ROOT / f"data/{character_id}/response_pools.json"
+            ),
+            structured_data=structured_data,
+            llm=llm_provider,
+            conversations=conversations,
+        )
+        for character_id in characters
+    })
 
     if live:
         profiles = {
             voice.id: VoiceProfile(
                 id=voice.id, voice=voice.voice,
-                ffmpeg_filter=voice.ffmpeg_filter,
+                ffmpeg_filter=(
+                    tiki_console_filter(
+                        sample_rate=voice.sample_rate,
+                        perch_pitch_semitones=voice.tiki_console.perch_pitch_semitones,
+                        beak_bite_hz=voice.tiki_console.beak_bite_hz,
+                        beak_bite_db=voice.tiki_console.beak_bite_db,
+                        beak_bite_width=voice.tiki_console.beak_bite_width,
+                        feather_sparkle_hz=voice.tiki_console.feather_sparkle_hz,
+                        feather_sparkle_db=voice.tiki_console.feather_sparkle_db,
+                        coconut_radio_bits=voice.tiki_console.coconut_radio_bits,
+                        rum_barrel_lufs=voice.tiki_console.rum_barrel_lufs,
+                    )
+                    if voice.tiki_console is not None else voice.ffmpeg_filter
+                ),
                 sample_rate=voice.sample_rate, channels=voice.channels,
             )
             for voice in config.voices.values()
@@ -118,8 +148,26 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
             voice_provider,
             actors,
             conversations=conversations,
-            stalling=NIGEL_STALLING_PLAN,
+            stalling={"nigel": NIGEL_STALLING_PLAN},
         ),
+    )
+
+
+def resolve_actor_id(
+    config: NumanConfig, character_id: str, requested_actor_id: str | None
+) -> str:
+    """Choose the explicit actor or the sole actor representing a character."""
+    if requested_actor_id is not None:
+        return requested_actor_id
+    if character_id == config.default_character:
+        return config.default_actor
+    matches = [item.id for item in config.actors.values() if item.character == character_id]
+    if len(matches) == 1:
+        return matches[0]
+    if not matches:
+        raise ConfigurationError(f"no actor represents character {character_id!r}")
+    raise ConfigurationError(
+        f"character {character_id!r} has multiple actors; select one with --actor"
     )
 
 
