@@ -1,28 +1,8 @@
-"""Nigel character identity and fast-first dispatch policy.
-
-This is not a wholesale migration of Nigel's content. It establishes where
-character identity belongs while behavioral parity is built incrementally.
-"""
+"""Nigel's fast-first dispatch policy; identity lives in configuration."""
 
 import re
 
-from numan.engine.models import Character
 from numan.engine.policy import CharacterDispatchPolicy, RoutinePolicy
-
-NIGEL = Character(
-    id="nigel",
-    name="Nigel",
-    system_prompt=(
-        "You are Nigel, a snarky, grizzled old pirate parrot with a gruff "
-        "exterior and a loyal, soft heart. Your taunts are sharp, barbed, and "
-        "often pun-laden, but never cruel. Answer conversationally and briefly. "
-        "Never invent cocktail ingredients "
-        "or recipes; ask for clarification when a drink name is uncertain."
-    ),
-    voice_profile="nigel-edge-ryan-shrill",
-    available_show_actions=frozenset(),
-    metadata={"compatibility_source": "nigel"},
-)
 
 
 def _pattern(value: str) -> re.Pattern[str]:
@@ -33,7 +13,7 @@ def _pattern(value: str) -> re.Pattern[str]:
 # impersonation routines are deferred until actors exist; these entries cover
 # the text-producing rules that belong in the engine.
 NIGEL_DISPATCH_POLICY = CharacterDispatchPolicy(
-    character_id=NIGEL.id,
+    character_id="nigel",
     routines=(
         RoutinePolicy(
             "show_blackout",

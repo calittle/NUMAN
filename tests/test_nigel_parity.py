@@ -3,8 +3,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from numan.characters import NIGEL
-from numan.characters.nigel_dispatch import build_nigel_dispatcher
 from numan.engine.models import ResponseSource, Utterance
 from numan.engine.normalization import extract_drink_query, routine_text, stable_text
 from numan.engine.providers import FakeLLMProvider
@@ -15,6 +13,7 @@ from numan.engine.repositories import (
     MappingResponsePools,
     RepositoryFormatError,
 )
+from tests.support import TEST_NIGEL, build_nigel_test_dispatcher
 
 
 FIXTURES = Path(__file__).parent / "fixtures" / "nigel_dispatch_cases.json"
@@ -46,7 +45,7 @@ def make_dispatcher():
             "recommend me something tropical": ["Try a Jungle Bird."],
         }
     )
-    dispatcher = build_nigel_dispatcher(
+    dispatcher = build_nigel_test_dispatcher(
         exact_cache=exact,
         response_pools=pools,
         structured_data=recipes,
@@ -57,7 +56,7 @@ def make_dispatcher():
 
 
 def utterance(text):
-    return Utterance(text, NIGEL.id, "regression-session")
+    return Utterance(text, TEST_NIGEL.id, "regression-session")
 
 
 class NormalizationTests(unittest.TestCase):
@@ -106,7 +105,7 @@ class NigelRegressionTests(unittest.IsolatedAsyncioTestCase):
     async def test_spoken_mai_tai_variant_stays_on_exact_cache_path(self):
         dispatcher, _, llm = make_dispatcher()
         plan = await dispatcher.dispatch(
-            utterance("Exact recipe for my Thai."), NIGEL
+            utterance("Exact recipe for my Thai."), TEST_NIGEL
         )
         self.assertEqual(plan.source, ResponseSource.EXACT_CACHE)
         self.assertEqual(plan.text, "Mai Tai recipe")
@@ -117,7 +116,9 @@ class NigelRegressionTests(unittest.IsolatedAsyncioTestCase):
         for case in cases:
             dispatcher, _, _ = make_dispatcher()
             with self.subTest(question=case["question"]):
-                plan = await dispatcher.dispatch(utterance(case["question"]), NIGEL)
+                plan = await dispatcher.dispatch(
+                    utterance(case["question"]), TEST_NIGEL
+                )
                 self.assertEqual(plan.source.value, case["expected"])
 
     async def test_llm_is_never_called_when_a_fast_path_hits(self):
@@ -129,20 +130,24 @@ class NigelRegressionTests(unittest.IsolatedAsyncioTestCase):
         )
         for question in questions:
             dispatcher, _, llm = make_dispatcher()
-            await dispatcher.dispatch(utterance(question), NIGEL)
+            await dispatcher.dispatch(utterance(question), TEST_NIGEL)
             self.assertEqual(llm.calls, [], question)
 
     async def test_llm_receives_character_and_conversation_scoped_utterance(self):
         dispatcher, _, llm = make_dispatcher()
-        plan = await dispatcher.dispatch(utterance("A completely novel question"), NIGEL)
+        plan = await dispatcher.dispatch(
+            utterance("A completely novel question"), TEST_NIGEL
+        )
         self.assertEqual(plan.source, ResponseSource.LLM_FALLBACK)
         self.assertEqual(len(llm.calls), 1)
         self.assertEqual(llm.calls[0][0].conversation_id, "regression-session")
-        self.assertIs(llm.calls[0][1], NIGEL)
+        self.assertIs(llm.calls[0][1], TEST_NIGEL)
 
     async def test_trace_explains_winner_and_has_timings(self):
         dispatcher, _, _ = make_dispatcher()
-        trace = await dispatcher.dispatch_with_trace(utterance("What's in a mai tai?"), NIGEL)
+        trace = await dispatcher.dispatch_with_trace(
+            utterance("What's in a mai tai?"), TEST_NIGEL
+        )
         self.assertEqual(trace.attempted_rules, ("routines", "exact_cache"))
         self.assertFalse(trace.attempts[0].matched)
         self.assertTrue(trace.attempts[1].matched)

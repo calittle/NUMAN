@@ -151,15 +151,3 @@ class EdgeTTSVoiceProvider:
             raise VoiceProviderError(
                 f"command {shutil.which(argv[0]) or argv[0]} failed: {detail}"
             )
-
-
-NIGEL_VOICE_PROFILE = VoiceProfile(
-    id="nigel-edge-ryan-shrill",
-    voice="en-GB-RyanNeural",
-    ffmpeg_filter=(
-        "asetrate=24000*2^(4/12),aresample=24000,atempo=1/2^(4/12),"
-        "equalizer=f=3150:t=q:w=0.5:g=20,"
-        "equalizer=f=6000:t=q:w=1:g=12,"
-        "acrusher=bits=6:mode=log:aa=1,loudnorm=I=-14:LRA=7:TP=-1.5"
-    ),
-)

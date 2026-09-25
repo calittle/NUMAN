@@ -29,6 +29,8 @@ from .recipes import JsonCocktailProvider
 from .show_control import (
     DrinkPresentationCatalog,
     FakeLightORamaProvider,
+    LightORamaOSCTriggerProvider,
+    LORTrigger,
     NullShowControlProvider,
     ShowActionScheduler,
 )
@@ -170,7 +172,16 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
         SquawkerActor(item.id, item.character, outputs[item.audio_route])
         for item in config.actors.values()
     )
-    if config.show_control.provider == "fake":
+    if live and config.show_control.provider == "lor-osc-trigger":
+        show_control = LightORamaOSCTriggerProvider(
+            config.show_control.host,
+            config.show_control.port,
+            {
+                action: LORTrigger(item.network, item.unit, item.circuit)
+                for action, item in config.show_control.triggers.items()
+            },
+        )
+    elif config.show_control.provider in {"fake", "lor-osc-trigger"}:
         show_control = FakeLightORamaProvider(config.show_control.allowed_actions)
     else:
         show_control = NullShowControlProvider()

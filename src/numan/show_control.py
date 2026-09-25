@@ -6,11 +6,13 @@ import asyncio
 import json
 import random
 import re
+import socket
+import struct
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from time import monotonic
-from typing import Mapping, Protocol
+from typing import Awaitable, Callable, Mapping, Protocol
 from uuid import uuid4
 
 from .engine.models import Character, ResponsePlan, ResponseSource, Utterance
@@ -42,6 +44,62 @@ class FakeLightORamaProvider:
         if action.name not in self.allowed_actions:
             raise ValueError(f"show action is not allowed: {action.name}")
         self.triggered.append(action)
+
+
+@dataclass(frozen=True, slots=True)
+class LORTrigger:
+    network: int
+    unit: int
+    circuit: int
+
+
+def encode_osc_trigger(trigger: LORTrigger) -> bytes:
+    """Encode LOR's documented ``/trigger n u c`` OSC message."""
+    return (
+        _osc_string("/trigger")
+        + _osc_string(",iii")
+        + struct.pack(">iii", trigger.network, trigger.unit, trigger.circuit)
+    )
+
+
+def _osc_string(value: str) -> bytes:
+    encoded = value.encode("utf-8") + b"\0"
+    return encoded + (b"\0" * ((-len(encoded)) % 4))
+
+
+class OSCUDPTransport:
+    async def send(self, packet: bytes, host: str, port: int) -> None:
+        loop = asyncio.get_running_loop()
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setblocking(False)
+        try:
+            await loop.sock_sendto(sock, packet, (host, port))
+        finally:
+            sock.close()
+
+
+class LightORamaOSCTriggerProvider:
+    """Map semantic actions to Advanced-license LOR interactive triggers."""
+
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        triggers: Mapping[str, LORTrigger],
+        *,
+        send: Callable[[bytes, str, int], Awaitable[None]] | None = None,
+    ) -> None:
+        self.host = host
+        self.port = port
+        self.triggers = dict(triggers)
+        self._send = send or OSCUDPTransport().send
+
+    async def trigger(self, action: ShowAction) -> None:
+        try:
+            trigger = self.triggers[action.name]
+        except KeyError as exc:
+            raise ValueError(f"show action has no LOR trigger: {action.name}") from exc
+        await self._send(encode_osc_trigger(trigger), self.host, self.port)
 
 
 @dataclass(slots=True)

@@ -1,6 +1,5 @@
 import unittest
 
-from numan.characters import NIGEL
 from numan.engine.dispatch import Dispatcher
 from numan.engine.models import ResponsePlan, ResponseSource, Utterance
 from numan.engine.rules import (
@@ -10,6 +9,7 @@ from numan.engine.rules import (
     RoutineRule,
     StructuredLookupRule,
 )
+from tests.support import TEST_NIGEL
 
 
 def utterance(text="hello"):
@@ -59,7 +59,7 @@ class DispatcherPrecedenceTests(unittest.IsolatedAsyncioTestCase):
         calls = []
         result = await self.make_dispatcher(
             calls, routine_matches=True, exact={"hello": "cache"}, pool="pool", db="db"
-        ).dispatch(utterance(), NIGEL)
+        ).dispatch(utterance(), TEST_NIGEL)
         self.assertEqual(result.source, ResponseSource.ROUTINE)
         self.assertEqual(calls, ["routine"])
 
@@ -67,7 +67,7 @@ class DispatcherPrecedenceTests(unittest.IsolatedAsyncioTestCase):
         calls = []
         result = await self.make_dispatcher(
             calls, exact={"hello": "cache"}, pool="pool", db="db"
-        ).dispatch(utterance("  HELLO  "), NIGEL)
+        ).dispatch(utterance("  HELLO  "), TEST_NIGEL)
         self.assertEqual(result.text, "cache")
         self.assertEqual(result.source, ResponseSource.EXACT_CACHE)
         self.assertEqual(calls, ["routine"])
@@ -75,26 +75,28 @@ class DispatcherPrecedenceTests(unittest.IsolatedAsyncioTestCase):
     async def test_pool_precedes_structured_lookup(self):
         calls = []
         result = await self.make_dispatcher(calls, pool="pool", db="db").dispatch(
-            utterance(), NIGEL
+            utterance(), TEST_NIGEL
         )
         self.assertEqual(result.source, ResponseSource.RESPONSE_POOL)
         self.assertEqual(calls, ["routine", "pool"])
 
     async def test_structured_lookup_precedes_llm(self):
         calls = []
-        result = await self.make_dispatcher(calls, db="db").dispatch(utterance(), NIGEL)
+        result = await self.make_dispatcher(calls, db="db").dispatch(
+            utterance(), TEST_NIGEL
+        )
         self.assertEqual(result.source, ResponseSource.STRUCTURED_LOOKUP)
         self.assertEqual(calls, ["routine", "pool", "db"])
 
     async def test_llm_is_last_resort(self):
         calls = []
-        result = await self.make_dispatcher(calls).dispatch(utterance(), NIGEL)
+        result = await self.make_dispatcher(calls).dispatch(utterance(), TEST_NIGEL)
         self.assertEqual(result.source, ResponseSource.LLM_FALLBACK)
         self.assertEqual(calls, ["routine", "pool", "db", "llm"])
 
     async def test_trace_names_only_rules_that_ran(self):
         trace = await self.make_dispatcher([], db="db").dispatch_with_trace(
-            utterance(), NIGEL
+            utterance(), TEST_NIGEL
         )
         self.assertEqual(
             trace.attempted_rules,
@@ -105,7 +107,7 @@ class DispatcherPrecedenceTests(unittest.IsolatedAsyncioTestCase):
         dispatcher = self.make_dispatcher([])
         with self.assertRaises(ValueError):
             await dispatcher.dispatch(
-                Utterance("hello", "someone-else", "table-1"), NIGEL
+                Utterance("hello", "someone-else", "table-1"), TEST_NIGEL
             )
 
 

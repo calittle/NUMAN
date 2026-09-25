@@ -147,6 +147,46 @@ the persistent API or wake runtime for delayed cues; exiting or restarting the
 process intentionally discards pending work. Persistence can be added later if
 show cues must survive a restart.
 
+### Light-O-Rama Advanced integration
+
+The production adapter targets the OSC interactive-trigger feature available
+with an Advanced or Pro LOR license. It sends LOR's documented
+`/trigger network unit circuit` message over UDP, normally to the S6 Control
+Panel on the same Windows computer. LOR owns the interactive group and every
+sequence within it; NUMAN only maps a semantic action to its virtual trigger.
+
+Keep `provider = "fake"` until S6 is installed. Then enable OSC reception in
+the Control Panel, choose its UDP port, configure an interactive trigger for
+each sequence, and change the provider:
+
+```toml
+[show_control]
+provider = "lor-osc-trigger"
+host = "127.0.0.1"
+port = 9000 # Use the actual port selected in LOR.
+
+[show_control.triggers.storm]
+network = 0
+unit = 1
+circuit = 1
+
+[show_control.triggers.present_jet_pilot]
+network = 0
+unit = 1
+circuit = 2
+```
+
+Every allowed action must have a mapping, and network (0–15), unit (1–240),
+and circuit (1–512) ranges are validated at startup. `numan show status`
+prints the complete destination and mapping without sending anything. Normal
+safe mode always substitutes the fake recorder; only `--live` or a live API
+runtime enables UDP transmission. OSC uses UDP and does not acknowledge cue
+execution, so operational confirmation will ultimately come from LOR's player
+log or a separate health/telemetry mechanism.
+
+References: [LOR OSC messages](https://www1.lightorama.com/downloads/6.3.2/help/osc-messages.htm)
+and [LOR license feature comparison](https://www1.lightorama.com/help/feature_comparison.htm).
+
 The `fake` and `openai-compatible` providers remain available for tests and
 alternate deployments.
 

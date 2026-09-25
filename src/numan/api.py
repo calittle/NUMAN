@@ -70,6 +70,22 @@ def create_app(
             "provider": runtime.config.show_control.provider,
             "hardware_safe": runtime.config.show_control.provider in {"fake", "none"},
             "allowed_actions": sorted(runtime.config.show_control.allowed_actions),
+            "destination": (
+                {
+                    "host": runtime.config.show_control.host,
+                    "port": runtime.config.show_control.port,
+                }
+                if runtime.config.show_control.provider == "lor-osc-trigger"
+                else None
+            ),
+            "triggers": {
+                action: {
+                    "network": item.network,
+                    "unit": item.unit,
+                    "circuit": item.circuit,
+                }
+                for action, item in runtime.config.show_control.triggers.items()
+            },
             "characters": {
                 item.id: sorted(item.show_actions)
                 for item in runtime.config.characters.values()

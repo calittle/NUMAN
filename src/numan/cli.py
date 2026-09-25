@@ -193,6 +193,18 @@ def _show_status(path: Path) -> int:
         "provider": config.show_control.provider,
         "hardware_safe": config.show_control.provider in {"fake", "none"},
         "allowed_actions": sorted(config.show_control.allowed_actions),
+        "destination": (
+            {"host": config.show_control.host, "port": config.show_control.port}
+            if config.show_control.provider == "lor-osc-trigger" else None
+        ),
+        "triggers": {
+            action: {
+                "network": item.network,
+                "unit": item.unit,
+                "circuit": item.circuit,
+            }
+            for action, item in config.show_control.triggers.items()
+        },
         "characters": {
             item.id: sorted(item.show_actions)
             for item in config.characters.values()

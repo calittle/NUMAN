@@ -89,6 +89,16 @@ class MicrophoneConfig:
 class ShowControlConfig:
     provider: str
     allowed_actions: frozenset[str]
+    host: str
+    port: int
+    triggers: Mapping[str, "LORTriggerConfig"]
+
+
+@dataclass(frozen=True, slots=True)
+class LORTriggerConfig:
+    network: int
+    unit: int
+    circuit: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -200,7 +210,7 @@ class NumanConfig:
             errors.append("Deepgram STT requires endpoint and API key environment name")
         if self.microphone.sample_rate <= 0 or self.microphone.channels != 1:
             errors.append("microphone requires a positive sample rate and one channel")
-        if self.show_control.provider not in {"fake", "none"}:
+        if self.show_control.provider not in {"fake", "none", "lor-osc-trigger"}:
             errors.append(
                 f"unsupported show-control provider {self.show_control.provider!r}"
             )
@@ -210,6 +220,24 @@ class NumanConfig:
                 errors.append(
                     f"character {character.id!r} references unavailable show actions: "
                     + ", ".join(sorted(unknown_actions))
+                )
+        for action, trigger in self.show_control.triggers.items():
+            if action not in self.show_control.allowed_actions:
+                errors.append(f"LOR trigger maps unknown show action {action!r}")
+            if not 0 <= trigger.network <= 15:
+                errors.append(f"LOR trigger {action!r} network must be 0 to 15")
+            if not 1 <= trigger.unit <= 240:
+                errors.append(f"LOR trigger {action!r} unit must be 1 to 240")
+            if not 1 <= trigger.circuit <= 512:
+                errors.append(f"LOR trigger {action!r} circuit must be 1 to 512")
+        if self.show_control.provider == "lor-osc-trigger":
+            if not self.show_control.host.strip() or not 1 <= self.show_control.port <= 65535:
+                errors.append("LOR OSC trigger provider requires a host and port")
+            missing = self.show_control.allowed_actions - self.show_control.triggers.keys()
+            if missing:
+                errors.append(
+                    "LOR OSC trigger provider has no mapping for: "
+                    + ", ".join(sorted(missing))
                 )
         phrases: dict[str, str] = {}
         for target in self.wake.targets.values():
@@ -326,6 +354,16 @@ def load_config(path: str | Path) -> NumanConfig:
             show_control=ShowControlConfig(
                 provider=_string(show_control_raw, "provider"),
                 allowed_actions=frozenset(show_control_raw.get("allowed_actions", [])),
+                host=str(show_control_raw.get("host", "127.0.0.1")),
+                port=int(show_control_raw.get("port", 0)),
+                triggers={
+                    key: LORTriggerConfig(
+                        network=int(value["network"]),
+                        unit=int(value["unit"]),
+                        circuit=int(value["circuit"]),
+                    )
+                    for key, value in _optional_table(show_control_raw, "triggers").items()
+                },
             ),
             wake=WakeConfig(
                 enabled=bool(wake_raw.get("enabled", False)),
@@ -355,6 +393,15 @@ def load_config(path: str | Path) -> NumanConfig:
 
 def _table(raw: Mapping[str, Any], key: str) -> Mapping[str, Mapping[str, Any]]:
     value = raw[key]
+    if not isinstance(value, dict):
+        raise TypeError(f"{key} must be a table")
+    return value
+
+
+def _optional_table(
+    raw: Mapping[str, Any], key: str
+) -> Mapping[str, Mapping[str, Any]]:
+    value = raw.get(key, {})
     if not isinstance(value, dict):
         raise TypeError(f"{key} must be a table")
     return value
