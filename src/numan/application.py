@@ -15,7 +15,6 @@ from .devices import list_audio_outputs
 from .engine.models import Character
 from .engine.providers import (
     FakeLLMProvider,
-    NullStructuredDataProvider,
     OllamaConfig,
     OllamaLLMProvider,
     OpenAICompatibleConfig,
@@ -24,6 +23,7 @@ from .engine.providers import (
 from .engine.repositories import JsonExactCache, JsonResponsePools
 from .orchestration import Orchestrator
 from .performance import NIGEL_STALLING_PLAN
+from .recipes import JsonCocktailProvider
 from .testing import FakeAudioBackend, FakeVoiceProvider
 from .transcription import (
     DeepgramConfig,
@@ -79,7 +79,7 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
     dispatcher = build_nigel_dispatcher(
         exact_cache=JsonExactCache(PROJECT_ROOT / "data/nigel/exact_cache.json"),
         response_pools=pools,
-        structured_data=NullStructuredDataProvider(),
+        structured_data=JsonCocktailProvider(PROJECT_ROOT / "data/cocktails/recipes.json"),
         llm=llm_provider,
         conversations=conversations,
     )

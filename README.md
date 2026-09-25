@@ -146,5 +146,18 @@ ends capture after speech followed by silence, routes the request to the
 target's character and actor, and discards microphone input while the answer
 is generated and played so the actor cannot wake itself.
 
+## Cocktail knowledge
+
+Recipe questions pass through a local structured catalog before Ollama. The
+initial catalog contains sourced specifications for Mai Tai, Jungle Bird,
+Zombie, Planter's Punch, and Painkiller. Unknown drinks remain clean provider
+misses; Nigel's prompt forbids inventing a recipe on the fallback path.
+
+Records live in `data/cocktails/recipes.json`, while spoken formatting and
+alias resolution live in `numan.recipes`. The initial specifications use the
+International Bartenders Association list and Pusser's published Painkiller
+formula. This provider can later be replaced or augmented by Kapu Tracker
+without changing dispatch or orchestration.
+
 The Nigel snapshot in `../nigel` is a behavioral reference. NUMAN code lives
 only in this repository.

@@ -1,0 +1,69 @@
+[
+  {
+    "name": "Mai Tai",
+    "aliases": ["Mai-Tai", "my thai", "mai thai", "my tie"],
+    "source": "International Bartenders Association",
+    "ingredients": [
+      {"amount": "30", "unit": "ml", "name": "amber Jamaican rum"},
+      {"amount": "30", "unit": "ml", "name": "Martinique molasses rum"},
+      {"amount": "15", "unit": "ml", "name": "orange curaçao"},
+      {"amount": "15", "unit": "ml", "name": "orgeat"},
+      {"amount": "30", "unit": "ml", "name": "fresh lime juice"},
+      {"amount": "7.5", "unit": "ml", "name": "simple syrup"}
+    ],
+    "garnish": "a pineapple spear, mint, and lime peel"
+  },
+  {
+    "name": "Jungle Bird",
+    "aliases": [],
+    "source": "International Bartenders Association",
+    "ingredients": [
+      {"amount": "45", "unit": "ml", "name": "blackstrap rum"},
+      {"amount": "22.5", "unit": "ml", "name": "Campari"},
+      {"amount": "45", "unit": "ml", "name": "pineapple juice"},
+      {"amount": "15", "unit": "ml", "name": "fresh lime juice"},
+      {"amount": "15", "unit": "ml", "name": "demerara syrup"}
+    ],
+    "garnish": "a pineapple wedge"
+  },
+  {
+    "name": "Zombie",
+    "aliases": [],
+    "source": "International Bartenders Association",
+    "ingredients": [
+      {"amount": "45", "unit": "ml", "name": "Jamaican dark rum"},
+      {"amount": "45", "unit": "ml", "name": "gold Puerto Rican rum"},
+      {"amount": "30", "unit": "ml", "name": "Demerara rum"},
+      {"amount": "20", "unit": "ml", "name": "fresh lime juice"},
+      {"amount": "15", "unit": "ml", "name": "falernum"},
+      {"amount": "15", "unit": "ml", "name": "Donn's Mix"},
+      {"amount": "1", "unit": "tsp", "name": "grenadine"},
+      {"amount": "1", "unit": "dash", "name": "Angostura bitters"},
+      {"amount": "6", "unit": "drop", "name": "Pernod"}
+    ],
+    "garnish": "mint leaves"
+  },
+  {
+    "name": "Planter's Punch",
+    "aliases": [],
+    "source": "International Bartenders Association",
+    "ingredients": [
+      {"amount": "45", "unit": "ml", "name": "Jamaican rum"},
+      {"amount": "15", "unit": "ml", "name": "lime juice"},
+      {"amount": "30", "unit": "ml", "name": "sugar cane juice"}
+    ],
+    "garnish": "orange zest"
+  },
+  {
+    "name": "Painkiller",
+    "aliases": ["Pain Killer"],
+    "source": "Pusser's Rum",
+    "ingredients": [
+      {"amount": "2", "unit": "oz", "name": "Pusser's rum"},
+      {"amount": "4", "unit": "oz", "name": "pineapple juice"},
+      {"amount": "1", "unit": "oz", "name": "orange juice"},
+      {"amount": "1", "unit": "oz", "name": "cream of coconut"}
+    ],
+    "garnish": "freshly grated nutmeg"
+  }
+]
