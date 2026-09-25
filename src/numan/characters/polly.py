@@ -9,6 +9,26 @@ POLLY_DISPATCH_POLICY = CharacterDispatchPolicy(
     character_id="polly",
     routines=(
         RoutinePolicy(
+            "show_lightning",
+            re.compile(
+                r"(?:trigger|start|do|give me|bring on|hit).*(?:lightning|thunderbolt)|"
+                r"(?:lightning|thunderbolt).*(?:now|please)$",
+                re.IGNORECASE,
+            ),
+            pool="_show_lightning",
+            show_actions=("lightning",),
+        ),
+        RoutinePolicy(
+            "show_storm",
+            re.compile(
+                r"(?:trigger|start|summon|give me|bring on).*(?:storm|tempest)|"
+                r"(?:storm|tempest).*(?:now|please)$",
+                re.IGNORECASE,
+            ),
+            pool="_show_storm",
+            show_actions=("storm",),
+        ),
+        RoutinePolicy(
             "parrot_taunt",
             re.compile(
                 r"polly.*(?:cracker|want)|cracker.*polly|can.*(?:fly|dance|sing|talk|swim)|"

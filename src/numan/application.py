@@ -26,6 +26,12 @@ from .engine.repositories import JsonExactCache, JsonResponsePools
 from .orchestration import Orchestrator
 from .performance import NIGEL_STALLING_PLAN
 from .recipes import JsonCocktailProvider
+from .show_control import (
+    DrinkPresentationCatalog,
+    FakeLightORamaProvider,
+    NullShowControlProvider,
+    ShowActionScheduler,
+)
 from .testing import FakeAudioBackend, FakeVoiceProvider
 from .transcription import (
     DeepgramConfig,
@@ -47,6 +53,8 @@ class Application:
     characters: dict[str, Character]
     actors: ActorRegistry
     orchestrator: Orchestrator
+    show_control: object
+    show_scheduler: ShowActionScheduler
 
 
 def build_application(config: NumanConfig, *, live: bool) -> Application:
@@ -85,6 +93,26 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
     structured_data = JsonCocktailProvider(
         PROJECT_ROOT / "data/cocktails/recipes.json"
     )
+    drink_presentations = DrinkPresentationCatalog(
+        PROJECT_ROOT / "data/show/drink_presentations.json"
+    )
+    for presentation in drink_presentations.items:
+        if presentation.show_action not in config.show_control.allowed_actions:
+            raise ConfigurationError(
+                f"drink {presentation.drink_id!r} references unavailable show action "
+                f"{presentation.show_action!r}"
+            )
+        for character_id in presentation.responses:
+            if character_id not in characters:
+                raise ConfigurationError(
+                    f"drink {presentation.drink_id!r} references unknown character "
+                    f"{character_id!r}"
+                )
+            if presentation.show_action not in characters[character_id].available_show_actions:
+                raise ConfigurationError(
+                    f"character {character_id!r} is not allowed to present "
+                    f"{presentation.drink_id!r}"
+                )
     dispatcher = CharacterDispatcher({
         character_id: build_character_dispatcher(
             policy=policies[character_id],
@@ -97,6 +125,7 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
             structured_data=structured_data,
             llm=llm_provider,
             conversations=conversations,
+            drink_presentations=drink_presentations,
         )
         for character_id in characters
     })
@@ -141,13 +170,21 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
         SquawkerActor(item.id, item.character, outputs[item.audio_route])
         for item in config.actors.values()
     )
+    if config.show_control.provider == "fake":
+        show_control = FakeLightORamaProvider(config.show_control.allowed_actions)
+    else:
+        show_control = NullShowControlProvider()
+    show_scheduler = ShowActionScheduler(show_control)
     return Application(
         config=config, characters=characters, actors=actors,
+        show_control=show_control,
+        show_scheduler=show_scheduler,
         orchestrator=Orchestrator(
             dispatcher,
             voice_provider,
             actors,
             conversations=conversations,
+            show_scheduler=show_scheduler,
             stalling={"nigel": NIGEL_STALLING_PLAN},
         ),
     )

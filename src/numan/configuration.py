@@ -86,6 +86,12 @@ class MicrophoneConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class ShowControlConfig:
+    provider: str
+    allowed_actions: frozenset[str]
+
+
+@dataclass(frozen=True, slots=True)
 class WakeTargetConfig:
     id: str
     phrases: tuple[str, ...]
@@ -109,6 +115,7 @@ class NumanConfig:
     llm: LLMConfig
     stt: STTConfig
     microphone: MicrophoneConfig
+    show_control: ShowControlConfig
     wake: WakeConfig
     characters: Mapping[str, CharacterConfig]
     voices: Mapping[str, VoiceConfig]
@@ -193,6 +200,17 @@ class NumanConfig:
             errors.append("Deepgram STT requires endpoint and API key environment name")
         if self.microphone.sample_rate <= 0 or self.microphone.channels != 1:
             errors.append("microphone requires a positive sample rate and one channel")
+        if self.show_control.provider not in {"fake", "none"}:
+            errors.append(
+                f"unsupported show-control provider {self.show_control.provider!r}"
+            )
+        for character in self.characters.values():
+            unknown_actions = character.show_actions - self.show_control.allowed_actions
+            if unknown_actions:
+                errors.append(
+                    f"character {character.id!r} references unavailable show actions: "
+                    + ", ".join(sorted(unknown_actions))
+                )
         phrases: dict[str, str] = {}
         for target in self.wake.targets.values():
             if target.character not in self.characters:
@@ -241,6 +259,7 @@ def load_config(path: str | Path) -> NumanConfig:
         llm_raw = raw["llm"]
         stt_raw = raw["stt"]
         microphone_raw = raw["microphone"]
+        show_control_raw = raw["show_control"]
         wake_raw = raw["wake"]
         characters = {
             key: CharacterConfig(
@@ -303,6 +322,10 @@ def load_config(path: str | Path) -> NumanConfig:
                 device=_string(microphone_raw, "device"),
                 sample_rate=int(microphone_raw.get("sample_rate", 16_000)),
                 channels=int(microphone_raw.get("channels", 1)),
+            ),
+            show_control=ShowControlConfig(
+                provider=_string(show_control_raw, "provider"),
+                allowed_actions=frozenset(show_control_raw.get("allowed_actions", [])),
             ),
             wake=WakeConfig(
                 enabled=bool(wake_raw.get("enabled", False)),

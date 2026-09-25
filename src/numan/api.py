@@ -64,6 +64,28 @@ def create_app(
     async def audio_devices():
         return [asdict(item) for item in list_audio_outputs()]
 
+    @app.get("/show")
+    async def show():
+        return {
+            "provider": runtime.config.show_control.provider,
+            "hardware_safe": runtime.config.show_control.provider in {"fake", "none"},
+            "allowed_actions": sorted(runtime.config.show_control.allowed_actions),
+            "characters": {
+                item.id: sorted(item.show_actions)
+                for item in runtime.config.characters.values()
+            },
+        }
+
+    @app.get("/show/cues")
+    async def show_cues():
+        return [_scheduled_cue(item) for item in runtime.show_scheduler.records()]
+
+    @app.delete("/show/cues/{cue_id}")
+    async def cancel_show_cue(cue_id: str):
+        if not runtime.show_scheduler.cancel(cue_id):
+            raise HTTPException(status_code=404, detail="scheduled cue not found or not pending")
+        return {"id": cue_id, "status": "cancelled"}
+
     @app.post("/ask")
     async def ask(request: AskRequest):
         question = request.question.strip()
@@ -95,8 +117,28 @@ def create_app(
             "route_id": result.route_id,
             "played": result.played,
             "stall_played": result.stall_played,
+            "show_actions": list(result.plan.show_actions),
+            "scheduled_actions": [
+                _scheduled_cue(item) for item in result.scheduled_actions
+            ],
             "timings": asdict(result.timings),
             "dispatch": [asdict(item) for item in result.dispatch_trace.attempts],
         }
 
     return app
+
+
+def _scheduled_cue(item):
+    return {
+        "id": item.id,
+        "action": item.action.name,
+        "parameters": dict(item.action.parameters),
+        "delay_seconds": item.delay_seconds,
+        "status": item.status,
+        "scheduled_at": item.scheduled_at.isoformat(),
+        "due_at": item.due_at.isoformat(),
+        "fired_at": item.fired_at.isoformat() if item.fired_at else None,
+        "error": item.error,
+        "character_id": item.character_id,
+        "conversation_id": item.conversation_id,
+    }

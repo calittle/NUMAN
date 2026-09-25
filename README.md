@@ -65,8 +65,8 @@ NUMAN_LIVE=1 .venv/bin/uvicorn numan.server:app --host 127.0.0.1 --port 8765
 Check `/health`: `"audio_backend":"real"` confirms audible playback; `"fake"`
 means the hardware-safe backend is active.
 
-The API exposes `/health`, `/characters`, `/actors`, `/audio/devices`, and
-`POST /ask`. Conversation history is isolated by character and conversation
+The API exposes `/health`, `/characters`, `/actors`, `/audio/devices`, `/show`,
+and `POST /ask`. Conversation history is isolated by character and conversation
 ID. The checked-in LLM provider is local Ollama using `llama3.2:3b`. Install
 Ollama, start its service, and pull that model before asking questions which
 fall through the fast routine/cache layers:
@@ -107,6 +107,45 @@ edit a value and use `numan ask --character <id> --live "Hello"` to audition
 it. Configuration validation rejects unsafe ranges. Advanced profiles may omit
 `tiki_console` and provide `ffmpeg_filter` directly as an escape hatch, but a
 profile cannot use both.
+
+## Semantic show control
+
+NUMAN can request named environmental effects without containing their
+choreography. The initial hardware-safe provider records `storm`, `lightning`,
+`volcano_rumble`, and `blackout`; it never talks to real lighting hardware.
+Character allowlists provide a second authorization boundary: Nigel may
+request all four actions, while Polly currently has only storm and lightning.
+
+```bash
+numan show status
+numan ask --character nigel "Bring on a storm"
+numan ask --character polly "Give me lightning"
+```
+
+The CLI/API result reports `show_actions`, and `GET /show` reports provider and
+permission diagnostics. A future Light-O-Rama transport will map each semantic
+name to a designer-authored sequence; NUMAN will not own channel-level timing.
+
+### Drink presentation cues
+
+Curated drink cues live in `data/show/drink_presentations.json`. Each record
+defines aliases, character-specific responses, a semantic action, duplicate
+cooldown, and separate delays for an order versus a bartender's serving
+announcement. For example, Jet Pilot and Suffering Bastard orders currently
+schedule their presentation two minutes after the bird finishes speaking;
+"I'm serving ..." fires the presentation immediately after speech playback.
+
+```text
+"I want a Jet Pilot"                 -> delay 120 seconds
+"I'm serving a Suffering Bastard"    -> delay 0 seconds
+"What's in a Jet Pilot?"             -> no presentation cue
+```
+
+Delayed actions are non-blocking. Inspect them with `GET /show/cues` and cancel
+one with `DELETE /show/cues/{id}`. The initial scheduler is in memory, so use
+the persistent API or wake runtime for delayed cues; exiting or restarting the
+process intentionally discards pending work. Persistence can be added later if
+show cues must survive a restart.
 
 The `fake` and `openai-compatible` providers remain available for tests and
 alternate deployments.

@@ -16,6 +16,7 @@ from numan.engine.rules import (
     RepositoryExactCacheRule,
     RepositoryResponsePoolRule,
 )
+from numan.show_control import DrinkPresentationCatalog, DrinkPresentationRule
 
 
 def build_character_dispatcher(
@@ -26,16 +27,20 @@ def build_character_dispatcher(
     structured_data: StructuredDataProvider,
     llm: LLMProvider,
     conversations: InMemoryConversationStore | None = None,
+    drink_presentations: DrinkPresentationCatalog | None = None,
     chooser: Callable[[Sequence[str]], str] | None = None,
 ) -> Dispatcher:
     keyword = {"chooser": chooser} if chooser is not None else {}
-    return Dispatcher([
+    rules = [
         CharacterRoutineRule(policy, response_pools, **keyword),
         RepositoryExactCacheRule(exact_cache),
         RepositoryResponsePoolRule(response_pools, **keyword),
         ProviderStructuredLookupRule(structured_data),
         ProviderLLMFallbackRule(llm, conversations),
-    ])
+    ]
+    if drink_presentations is not None:
+        rules.insert(0, DrinkPresentationRule(drink_presentations, **keyword))
+    return Dispatcher(rules)
 
 
 class CharacterDispatcher:

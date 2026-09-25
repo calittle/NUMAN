@@ -22,6 +22,12 @@ device = "system-default"
 sample_rate = 16000
 channels = 1
 
+# Hardware-safe semantic show control. NUMAN names the effect; Light-O-Rama
+# will eventually own the sequence, channels, relays, and choreography.
+[show_control]
+provider = "fake"
+allowed_actions = ["storm", "lightning", "volcano_rumble", "blackout", "present_jet_pilot", "present_suffering_bastard"]
+
 [wake]
 enabled = true
 model_dir = "models/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01"
@@ -42,13 +48,13 @@ actor = "polly-dev"
 name = "Nigel"
 system_prompt = "You are Nigel, a snarky, grizzled old British pirate parrot who tends a tiki bar. Your exterior is gruff and your insults are sharp, barbed, and often pun-laden, but underneath you are loyal and soft-hearted. Never become cruel. Answer in one or two short sentences. Never write stage directions, role labels, sound effects, or asterisks; output only words Nigel should speak aloud. Never invent cocktail ingredients or recipes. If a drink name is unclear or you do not know its established recipe, ask the guest to repeat the name or admit that you do not know."
 voice_profile = "nigel-edge-ryan-shrill"
-show_actions = []
+show_actions = ["storm", "lightning", "volcano_rumble", "blackout", "present_jet_pilot", "present_suffering_bastard"]
 
 [characters.polly]
 name = "Polly"
 system_prompt = "You are Polly, a brightly enthusiastic tiki-bar parrot whose relentless cheerfulness is almost sickening. Your taunts are sweet, dainty, and deceptively pointed: like being scratched by a feather. You are warm rather than cruel and never lose your sunny delivery. Answer in one or two short sentences. Never write stage directions, role labels, sound effects, or asterisks; output only words Polly should speak aloud. Never invent cocktail ingredients or recipes. If a drink name is unclear or you do not know its established recipe, ask the guest to repeat the name or admit that you do not know."
 voice_profile = "polly-edge-jenny-bright"
-show_actions = []
+show_actions = ["storm", "lightning", "present_jet_pilot", "present_suffering_bastard"]
 
 [voices.nigel-edge-ryan-shrill]
 provider = "edge-tts"

@@ -20,6 +20,10 @@ class ApiTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual((await self.client.get("/characters")).json()[0]["id"], "nigel")
         self.assertEqual((await self.client.get("/actors")).json()[0]["id"], "nigel-dev")
+        show = (await self.client.get("/show")).json()
+        self.assertEqual(show["provider"], "fake")
+        self.assertTrue(show["hardware_safe"])
+        self.assertIn("storm", show["characters"]["nigel"])
 
     async def test_safe_ask_endpoint(self):
         response = await self.client.post("/ask", json={
@@ -52,6 +56,32 @@ class ApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(body["route_id"], "polly-development")
         self.assertEqual(body["source"], "exact_cache")
         self.assertTrue(body["response"].startswith("I'm Polly"))
+
+    async def test_show_routine_exposes_semantic_action(self):
+        response = await self.client.post("/ask", json={
+            "question": "Bring on a storm",
+            "character_id": "polly",
+        })
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["source"], "routine")
+        self.assertEqual(body["show_actions"], ["storm"])
+
+    async def test_delayed_drink_cue_can_be_inspected_and_cancelled(self):
+        response = await self.client.post("/ask", json={
+            "question": "I want a Jet Pilot",
+            "character_id": "polly",
+        })
+        body = response.json()
+        cue = body["scheduled_actions"][0]
+        self.assertEqual(cue["action"], "present_jet_pilot")
+        self.assertEqual(cue["delay_seconds"], 120)
+        self.assertEqual(cue["status"], "scheduled")
+        pending = (await self.client.get("/show/cues")).json()
+        self.assertIn(cue["id"], {item["id"] for item in pending})
+        cancelled = await self.client.delete(f"/show/cues/{cue['id']}")
+        self.assertEqual(cancelled.status_code, 200)
+        self.assertEqual(cancelled.json()["status"], "cancelled")
 
     async def test_ask_validation_and_unknown_actor(self):
         self.assertEqual(

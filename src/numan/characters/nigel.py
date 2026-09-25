@@ -36,6 +36,30 @@ NIGEL_DISPATCH_POLICY = CharacterDispatchPolicy(
     character_id=NIGEL.id,
     routines=(
         RoutinePolicy(
+            "show_blackout",
+            _pattern(r"(?:trigger|start|do|give me|bring on|hit).*(?:blackout|lights out)|(?:blackout|lights out).*(?:now|please)$"),
+            pool="_show_blackout",
+            show_actions=("blackout",),
+        ),
+        RoutinePolicy(
+            "show_lightning",
+            _pattern(r"(?:trigger|start|do|give me|bring on|hit).*(?:lightning|thunderbolt)|(?:lightning|thunderbolt).*(?:now|please)$"),
+            pool="_show_lightning",
+            show_actions=("lightning",),
+        ),
+        RoutinePolicy(
+            "show_volcano",
+            _pattern(r"(?:trigger|start|wake|rumble|give me|bring on).*(?:volcano|mountain)|(?:volcano|mountain).*(?:rumble|now|please)$"),
+            pool="_show_volcano",
+            show_actions=("volcano_rumble",),
+        ),
+        RoutinePolicy(
+            "show_storm",
+            _pattern(r"(?:trigger|start|summon|give me|bring on).*(?:storm|tempest)|(?:storm|tempest).*(?:now|please)$"),
+            pool="_show_storm",
+            show_actions=("storm",),
+        ),
+        RoutinePolicy(
             "make_me",
             _pattern(r"make me (?:(?:a|an) )?(?P<thing>.+)$"),
             response_template="Pooooof! You are a {thing}",

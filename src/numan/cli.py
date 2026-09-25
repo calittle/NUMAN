@@ -53,6 +53,9 @@ def build_parser() -> argparse.ArgumentParser:
     stt = subparsers.add_parser("stt", help="inspect speech recognition")
     stt.add_subparsers(dest="stt_command", required=True).add_parser("status")
 
+    show = subparsers.add_parser("show", help="inspect semantic show control")
+    show.add_subparsers(dest="show_command", required=True).add_parser("status")
+
     wake = subparsers.add_parser("wake", help="configure and test wake words")
     wake_commands = wake.add_subparsers(dest="wake_command", required=True)
     wake_commands.add_parser("status")
@@ -145,6 +148,17 @@ async def _perform_question(args, question: str) -> int:
         "response": result.plan.text,
         "played": result.played,
         "stall_played": result.stall_played,
+        "show_actions": list(result.plan.show_actions),
+        "scheduled_actions": [
+            {
+                "id": item.id,
+                "action": item.action.name,
+                "delay_seconds": item.delay_seconds,
+                "status": item.status,
+                "due_at": item.due_at.isoformat(),
+            }
+            for item in result.scheduled_actions
+        ],
         "attempts": [
             {"rule": item.rule, "matched": item.matched, "duration_ms": item.duration_ms}
             for item in result.dispatch_trace.attempts
@@ -171,6 +185,20 @@ async def _stt_status(path: Path) -> int:
         "errors": errors,
     }, indent=2))
     return 0 if not errors else 1
+
+
+def _show_status(path: Path) -> int:
+    config = load_config(path)
+    print(json.dumps({
+        "provider": config.show_control.provider,
+        "hardware_safe": config.show_control.provider in {"fake", "none"},
+        "allowed_actions": sorted(config.show_control.allowed_actions),
+        "characters": {
+            item.id: sorted(item.show_actions)
+            for item in config.characters.values()
+        },
+    }, indent=2))
+    return 0
 
 
 async def _transcribe(path: Path, audio: Path) -> int:
@@ -256,6 +284,17 @@ async def _wake(args) -> int:
                 "response": result.plan.text,
                 "played": result.played,
                 "stall_played": result.stall_played,
+                "show_actions": list(result.plan.show_actions),
+                "scheduled_actions": [
+                    {
+                        "id": item.id,
+                        "action": item.action.name,
+                        "delay_seconds": item.delay_seconds,
+                        "status": item.status,
+                        "due_at": item.due_at.isoformat(),
+                    }
+                    for item in result.scheduled_actions
+                ],
             }, indent=2), flush=True)
 
         def submit_query(target, audio):
@@ -341,6 +380,8 @@ def main(argv=None) -> int:
             return asyncio.run(_llm_status(args.config))
         if args.command == "stt":
             return asyncio.run(_stt_status(args.config))
+        if args.command == "show":
+            return _show_status(args.config)
         if args.command == "wake":
             return asyncio.run(_wake(args))
         if args.command == "transcribe":

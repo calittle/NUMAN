@@ -53,6 +53,26 @@
     "Can't complain. I mean, I can, and with considerable craftsmanship.",
     "Long night, mate. Still, nobody should face an empty glass alone."
   ],
+  "_show_storm": [
+    "Batten down whatever passes for hatches around here. Storm's coming.",
+    "A storm? Finally, weather with some character.",
+    "Hold onto your drink, mate. The sky's about to lose its temper."
+  ],
+  "_show_lightning": [
+    "Keep your feathers down. Here comes the flash.",
+    "One bolt, coming up. Try to look surprised.",
+    "Let's shed a little violent light on the subject."
+  ],
+  "_show_volcano": [
+    "The mountain's clearing its throat. This should be subtle.",
+    "Feel that rumble? Kalapu's in one of its moods.",
+    "Wake the volcano. Apparently the floor was too dependable."
+  ],
+  "_show_blackout": [
+    "Lights out. Keep your hands where your conscience can find them.",
+    "Going dark. An improvement for some of us.",
+    "Blackout it is. Mind your glass and mistrust everyone."
+  ],
   "recommend me something tropical": [
     "Try a Jungle Bird: bitter, bright, and considerably more interesting than your last idea.",
     "A Mai Tai, properly made. Strong enough to improve the view without changing the furniture.",

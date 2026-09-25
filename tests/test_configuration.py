@@ -43,6 +43,18 @@ class ConfigurationTests(unittest.TestCase):
         config = load_config(PROJECT_ROOT / "config/numan.toml")
         self.assertIsInstance(live_environment_errors(config), list)
 
+    def test_character_cannot_reference_unavailable_show_action(self):
+        source = (PROJECT_ROOT / "config/numan.toml").read_text(encoding="utf-8")
+        source = source.replace(
+            'allowed_actions = ["storm", "lightning", "volcano_rumble", "blackout", "present_jet_pilot", "present_suffering_bastard"]',
+            'allowed_actions = ["storm", "lightning", "volcano_rumble", "present_jet_pilot", "present_suffering_bastard"]',
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "invalid.toml"
+            path.write_text(source, encoding="utf-8")
+            with self.assertRaisesRegex(ConfigurationError, "unavailable show actions"):
+                load_config(path)
+
 
 if __name__ == "__main__":
     unittest.main()

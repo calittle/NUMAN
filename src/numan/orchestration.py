@@ -14,7 +14,13 @@ from .conversations import ConversationKey, InMemoryConversationStore, TurnRole
 from .engine.dispatch import DispatchTrace, Dispatcher
 from .engine.models import Character, ResponsePlan, Utterance
 from .voice import AudioAsset, VoiceProvider
-from .show_control import NullShowControlProvider, ShowAction, ShowControlProvider
+from .show_control import (
+    NullShowControlProvider,
+    ScheduledShowCue,
+    ShowAction,
+    ShowActionScheduler,
+    ShowControlProvider,
+)
 from .performance import StallingPlan
 
 
@@ -35,6 +41,7 @@ class PerformanceResult:
     route_id: str
     played: bool
     stall_played: bool
+    scheduled_actions: tuple[ScheduledShowCue, ...]
     timings: PerformanceTimings
 
 
@@ -46,13 +53,15 @@ class Orchestrator:
         actors: ActorRegistry,
         conversations: InMemoryConversationStore | None = None,
         show_control: ShowControlProvider | None = None,
+        show_scheduler: ShowActionScheduler | None = None,
         stalling: StallingPlan | Mapping[str, StallingPlan] | None = None,
     ) -> None:
         self._dispatcher = dispatcher
         self._voice = voice
         self._actors = actors
         self._conversations = conversations or InMemoryConversationStore()
-        self._show_control = show_control or NullShowControlProvider()
+        provider = show_control or NullShowControlProvider()
+        self._show_scheduler = show_scheduler or ShowActionScheduler(provider)
         self._stalling = stalling
         self._last_stall_assets: dict[str, Path] = {}
 
@@ -113,7 +122,6 @@ class Orchestrator:
                 raise ValueError(
                     f"character {character.id!r} cannot trigger show action {action_name!r}"
                 )
-            await self._show_control.trigger(ShowAction(action_name))
 
         synthesis_started = perf_counter_ns()
         if trace.plan.audio_asset:
@@ -131,6 +139,20 @@ class Orchestrator:
         playback_started = perf_counter_ns()
         playback = await actor.speak(asset)
         playback_ms = _elapsed(playback_started)
+        scheduled_actions = []
+        action_parameters = {
+            key: trace.plan.metadata[key]
+            for key in ("drink", "intent")
+            if key in trace.plan.metadata
+        }
+        for action_name in trace.plan.show_actions:
+            scheduled_actions.append(await self._show_scheduler.schedule(
+                ShowAction(action_name, action_parameters),
+                character_id=character.id,
+                conversation_id=utterance.conversation_id,
+                delay_seconds=trace.plan.show_action_delays.get(action_name, 0),
+                cooldown_seconds=trace.plan.show_action_cooldowns.get(action_name, 0),
+            ))
         if trace.plan.text:
             await self._conversations.append(
                 conversation_key, TurnRole.ASSISTANT, trace.plan.text
@@ -142,6 +164,7 @@ class Orchestrator:
             route_id=playback.route_id,
             played=playback.played,
             stall_played=stall_played,
+            scheduled_actions=tuple(scheduled_actions),
             timings=PerformanceTimings(
                 dispatch_ms=dispatch_ms,
                 synthesis_ms=synthesis_ms,

@@ -71,9 +71,19 @@ class ResponsePlan:
     text: str | None = None
     audio_asset: str | None = None
     show_actions: tuple[str, ...] = ()
+    show_action_delays: Mapping[str, float] = field(default_factory=dict)
+    show_action_cooldowns: Mapping[str, float] = field(default_factory=dict)
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.text and not self.audio_asset and not self.show_actions:
             raise ValueError("a response plan must contain an observable action")
+        object.__setattr__(
+            self, "show_action_delays", MappingProxyType(dict(self.show_action_delays))
+        )
+        object.__setattr__(
+            self,
+            "show_action_cooldowns",
+            MappingProxyType(dict(self.show_action_cooldowns)),
+        )
         object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))

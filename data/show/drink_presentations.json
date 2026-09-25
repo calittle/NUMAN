@@ -1,0 +1,36 @@
+{
+  "jet_pilot": {
+    "aliases": ["jet pilot"],
+    "show_action": "present_jet_pilot",
+    "order_delay_seconds": 120,
+    "serving_delay_seconds": 0,
+    "cooldown_seconds": 30,
+    "responses": {
+      "nigel": [
+        "A Jet Pilot? Very well. Your flight departs when the bartender finds the runway.",
+        "One Jet Pilot. Keep your tray table up and your expectations low."
+      ],
+      "polly": [
+        "One Jet Pilot! Your boarding spectacle will begin shortly.",
+        "Excellent choice! Please return your tray table to its most festive position."
+      ]
+    }
+  },
+  "suffering_bastard": {
+    "aliases": ["suffering bastard"],
+    "show_action": "present_suffering_bastard",
+    "order_delay_seconds": 120,
+    "serving_delay_seconds": 0,
+    "cooldown_seconds": 30,
+    "responses": {
+      "nigel": [
+        "A fitting name. Stand back and let the poor devil suffer properly.",
+        "One Suffering Bastard. At last, a drink with honest advertising."
+      ],
+      "polly": [
+        "One Suffering Bastard! Don't worry, the drink is having a lovely time.",
+        "Coming right up! Misery has never looked so refreshingly festive."
+      ]
+    }
+  }
+}

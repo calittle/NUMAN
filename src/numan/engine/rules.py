@@ -30,6 +30,7 @@ def _plan(
     *,
     text: str | None = None,
     audio_asset: str | None = None,
+    show_actions: tuple[str, ...] = (),
     metadata: Mapping[str, object] | None = None,
 ) -> ResponsePlan:
     return ResponsePlan(
@@ -38,6 +39,7 @@ def _plan(
         source=source,
         text=text,
         audio_asset=audio_asset,
+        show_actions=show_actions,
         metadata=metadata or {},
     )
 
@@ -139,6 +141,7 @@ class CharacterRoutineRule:
                 utterance,
                 ResponseSource.ROUTINE,
                 text=response,
+                show_actions=routine.show_actions,
                 metadata={"routine": routine.name, "pool": routine.pool},
             )
         return None

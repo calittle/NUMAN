@@ -10,6 +10,8 @@ from numan.engine.providers import FakeLLMProvider
 from numan.orchestration import Orchestrator
 from numan.show_control import FakeLightORamaProvider
 from numan.testing import FakeAudioBackend, FakeVoiceProvider
+from numan.application import PROJECT_ROOT, build_application
+from numan.configuration import load_config
 
 
 CHARACTER = Character(
@@ -71,6 +73,21 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
 
 
 class ShowControlTests(unittest.IsolatedAsyncioTestCase):
+    async def test_configured_nigel_routine_triggers_semantic_storm(self):
+        application = build_application(
+            load_config(PROJECT_ROOT / "config/numan.toml"), live=False
+        )
+        result = await application.orchestrator.perform(
+            Utterance("Bring on a storm", "nigel", "show-test"),
+            application.characters["nigel"],
+            "nigel-dev",
+        )
+        self.assertEqual(result.plan.show_actions, ("storm",))
+        self.assertEqual(
+            [action.name for action in application.show_control.triggered],
+            ["storm"],
+        )
+
     async def test_semantic_action_reaches_provider(self):
         provider = FakeLightORamaProvider({"storm"})
         registered = actor()

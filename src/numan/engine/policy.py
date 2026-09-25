@@ -12,6 +12,7 @@ class RoutinePolicy:
     pattern: re.Pattern[str]
     pool: str | None = None
     response_template: str | None = None
+    show_actions: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
