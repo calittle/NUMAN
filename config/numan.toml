@@ -15,15 +15,27 @@ command = "whisper-cli"
 endpoint = "https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true"
 api_key_env = "DEEPGRAM_API_KEY"
 language = "en"
+prompt = "Nigel, Mai Tai, Zombie, Painkiller, Jungle Bird, Navy Grog, Planter's Punch, orgeat, falernum, curaçao, demerara rum, tiki cocktails."
 
 [microphone]
 device = "system-default"
 sample_rate = 16000
 channels = 1
 
+[wake]
+enabled = true
+model_dir = "models/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01"
+threshold = 0.20
+score = 1.0
+
+[wake.targets.nigel]
+phrases = ["hey nigel"]
+character = "nigel"
+actor = "nigel-dev"
+
 [characters.nigel]
 name = "Nigel"
-system_prompt = "You are Nigel, a dry, witty British tiki-bar bartender parrot. Answer in one or two short sentences. Never write stage directions, role labels, sound effects, or asterisks; output only words Nigel should speak aloud."
+system_prompt = "You are Nigel, a dry, witty British tiki-bar bartender parrot. Answer in one or two short sentences. Never write stage directions, role labels, sound effects, or asterisks; output only words Nigel should speak aloud. Never invent cocktail ingredients or recipes. If a drink name is unclear or you do not know its established recipe, ask the guest to repeat the name or admit that you do not know."
 voice_profile = "nigel-edge-ryan-shrill"
 show_actions = []
 

@@ -73,11 +73,12 @@ class NormalizationTests(unittest.TestCase):
             "How do I make a Zombie?": "zombie",
             "Recipe for Painkiller": "painkiller",
             "Describe Planter's Punch": "planter's punch",
+            "Exact recipe for my Thai.": "mai tai",
+            "Recipe for Mai Thai!": "mai tai",
         }
         for question, expected in cases.items():
             with self.subTest(question=question):
                 self.assertEqual(extract_drink_query(question), expected)
-
 
 class RepositoryTests(unittest.TestCase):
     def test_json_repositories(self):
@@ -102,6 +103,15 @@ class RepositoryTests(unittest.TestCase):
 
 
 class NigelRegressionTests(unittest.IsolatedAsyncioTestCase):
+    async def test_spoken_mai_tai_variant_stays_on_exact_cache_path(self):
+        dispatcher, _, llm = make_dispatcher()
+        plan = await dispatcher.dispatch(
+            utterance("Exact recipe for my Thai."), NIGEL
+        )
+        self.assertEqual(plan.source, ResponseSource.EXACT_CACHE)
+        self.assertEqual(plan.text, "Mai Tai recipe")
+        self.assertEqual(llm.calls, [])
+
     async def test_recorded_precedence_cases(self):
         cases = json.loads(FIXTURES.read_text(encoding="utf-8"))
         for case in cases:

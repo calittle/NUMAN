@@ -34,6 +34,7 @@ class WhisperCppConfig:
     command: str = "whisper-cli"
     language: str = "en"
     timeout_s: float = 60.0
+    prompt: str = ""
 
 
 class WhisperCppSTTProvider:
@@ -54,7 +55,7 @@ class WhisperCppSTTProvider:
             raise TranscriptionError("; ".join(errors))
         output_stem = Path(tempfile.gettempdir()) / f"numan-stt-{uuid4().hex}"
         output_text = output_stem.with_suffix(".txt")
-        argv = (
+        argv = [
             self._config.command,
             "-m", str(self._config.model_path),
             "-f", str(audio_path),
@@ -63,7 +64,9 @@ class WhisperCppSTTProvider:
             "--no-timestamps",
             "--output-txt",
             "--output-file", str(output_stem),
-        )
+        ]
+        if self._config.prompt:
+            argv.extend(["--prompt", self._config.prompt])
         try:
             process = await asyncio.create_subprocess_exec(
                 *argv,

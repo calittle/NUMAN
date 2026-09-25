@@ -112,5 +112,39 @@ Local transcription deliberately runs on CPU so it does not contend with
 Ollama for Metal memory. Set `[stt].provider = "deepgram"` to use the optional
 prerecorded-audio adapter with `DEEPGRAM_API_KEY`.
 
+## Wake words
+
+Wake phrases are configured per target and compiled for sherpa-onnx at runtime:
+
+```toml
+[wake.targets.nigel]
+phrases = ["hey nigel"]
+character = "nigel"
+actor = "nigel-dev"
+```
+
+Additional targets use the same single microphone stream. Duplicate phrases,
+unknown characters or actors, and character/actor mismatches fail validation.
+Inspect, compile, and test routing with:
+
+```bash
+numan wake status
+numan wake compile
+numan wake listen
+```
+
+`wake listen` is a detector diagnostic: it only prints the routed target.
+Run the complete hands-free pipeline with:
+
+```bash
+numan wake run --live
+```
+
+Say a configured wake phrase, pause briefly, and ask the question. NUMAN uses
+the same continuously open microphone stream for detection and query capture,
+ends capture after speech followed by silence, routes the request to the
+target's character and actor, and discards microphone input while the answer
+is generated and played so the actor cannot wake itself.
+
 The Nigel snapshot in `../nigel` is a behavioral reference. NUMAN code lives
 only in this repository.

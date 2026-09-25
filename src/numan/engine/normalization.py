@@ -7,6 +7,15 @@ import re
 _SPACE_RE = re.compile(r"\s+")
 _NON_STABLE_RE = re.compile(r"[^a-z0-9 ]")
 _ROUTINE_PUNCT_RE = re.compile(r"[?.!]")
+_TRAILING_QUERY_PUNCT_RE = re.compile(r"[?.!,]+$")
+
+# Conservative corrections for common speech-recognition homophones. These
+# apply only after a phrase has already matched a drink-query form.
+_DRINK_ALIASES = {
+    "mai thai": "mai tai",
+    "my thai": "mai tai",
+    "my tie": "mai tai",
+}
 
 # Ordered like the sed expressions in Nigel's check_drink_cache/check_drink_db.
 _DRINK_PATTERNS = tuple(
@@ -43,6 +52,8 @@ def extract_drink_query(text: str) -> str | None:
     for pattern in _DRINK_PATTERNS:
         match = pattern.fullmatch(text.strip())
         if match:
-            value = collapse_spaces(match.group(1).replace("?", ""))
-            return value.casefold() or None
+            value = collapse_spaces(
+                _TRAILING_QUERY_PUNCT_RE.sub("", match.group(1).strip())
+            ).casefold()
+            return _DRINK_ALIASES.get(value, value) or None
     return None

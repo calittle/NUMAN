@@ -33,6 +33,7 @@ from .transcription import (
     WhisperCppSTTProvider,
 )
 from .voice import EdgeTTSVoiceProvider, VoiceProfile
+from .wake import SherpaWakeConfig, WakeRegistry, WakeTarget
 from .conversations import InMemoryConversationStore
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -131,6 +132,7 @@ def build_stt_provider(config: NumanConfig) -> STTProvider:
             model_path=model,
             command=config.stt.command,
             language=config.stt.language,
+            prompt=config.stt.prompt,
         ))
     return DeepgramSTTProvider(DeepgramConfig(
         endpoint=config.stt.endpoint,
@@ -156,3 +158,22 @@ def stt_environment_errors(config: NumanConfig) -> list[str]:
         provider = build_stt_provider(config)
         return provider.status_errors()
     return []
+
+
+def build_wake_registry(config: NumanConfig) -> WakeRegistry:
+    return WakeRegistry(tuple(
+        WakeTarget(item.id, item.phrases, item.character, item.actor)
+        for item in config.wake.targets.values()
+    ))
+
+
+def build_wake_config(config: NumanConfig) -> SherpaWakeConfig:
+    model_dir = Path(config.wake.model_dir)
+    if not model_dir.is_absolute():
+        model_dir = PROJECT_ROOT / model_dir
+    return SherpaWakeConfig(
+        model_dir=model_dir,
+        threshold=config.wake.threshold,
+        score=config.wake.score,
+        sample_rate=config.microphone.sample_rate,
+    )

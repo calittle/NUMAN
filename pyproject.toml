@@ -27,6 +27,11 @@ api = [
   "fastapi>=0.115",
   "uvicorn>=0.34",
 ]
+wake = [
+  "pypinyin>=0.55",
+  "sentencepiece>=0.2",
+  "sherpa-onnx>=1.12",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/numan"]

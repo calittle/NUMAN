@@ -12,14 +12,22 @@ from .application import (
     PROJECT_ROOT,
     build_application,
     build_stt_provider,
+    build_wake_config,
+    build_wake_registry,
     live_environment_errors,
     stt_environment_errors,
 )
 from .configuration import ConfigurationError, load_config
-from .devices import list_audio_inputs, list_audio_outputs
+from .devices import list_audio_inputs, list_audio_outputs, resolve_input_device
 from .engine.models import Utterance
 from .engine.providers import LLMProviderError, OllamaConfig, OllamaLLMProvider
 from .transcription import MicrophoneRecorder, TranscriptionError, WhisperCppSTTProvider
+from .wake import (
+    SherpaKeywordCompiler,
+    SherpaKeywordDetector,
+    WakeError,
+    WakeListener,
+)
 
 DEFAULT_CONFIG = PROJECT_ROOT / "config/numan.toml"
 
@@ -43,6 +51,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     stt = subparsers.add_parser("stt", help="inspect speech recognition")
     stt.add_subparsers(dest="stt_command", required=True).add_parser("status")
+
+    wake = subparsers.add_parser("wake", help="configure and test wake words")
+    wake_commands = wake.add_subparsers(dest="wake_command", required=True)
+    wake_commands.add_parser("status")
+    wake_commands.add_parser("compile")
+    wake_commands.add_parser("listen", help="print routed wake detections")
+    wake_run = wake_commands.add_parser("run", help="wake, capture, transcribe, and answer")
+    wake_run.add_argument("--live", action="store_true", help="play spoken answers")
 
     transcribe = subparsers.add_parser("transcribe", help="transcribe a WAV file")
     transcribe.add_argument("audio", type=Path)
@@ -165,6 +181,102 @@ async def _transcribe(path: Path, audio: Path) -> int:
     return 0
 
 
+async def _wake(args) -> int:
+    path = args.config
+    command = args.wake_command
+    config = load_config(path)
+    wake_config = build_wake_config(config)
+    registry = build_wake_registry(config)
+    errors = SherpaKeywordDetector.status_errors(wake_config)
+    if command == "status":
+        print(json.dumps({
+            "enabled": config.wake.enabled,
+            "ready": not errors,
+            "model_dir": str(wake_config.model_dir),
+            "targets": [
+                {
+                    "id": target.id,
+                    "phrases": target.phrases,
+                    "character": target.character_id,
+                    "actor": target.actor_id,
+                }
+                for target in registry.targets
+            ],
+            "errors": errors,
+        }, indent=2))
+        return 0 if not errors else 1
+    if errors:
+        raise ConfigurationError("; ".join(errors))
+    keywords = await SherpaKeywordCompiler().compile(
+        wake_config.model_dir, registry.phrases
+    )
+    if command == "compile":
+        print(json.dumps({
+            "compiled": True,
+            "keywords_file": str(keywords),
+            "phrases": registry.phrases,
+        }, indent=2))
+        return 0
+    detector = SherpaKeywordDetector(wake_config, keywords)
+    microphone = resolve_input_device(config.microphone.device)
+    listener = WakeListener(detector, registry, microphone)
+    print("Listening for: " + ", ".join(registry.phrases), flush=True)
+    print("Press Ctrl-C to stop.", flush=True)
+    on_query = None
+    if command == "run":
+        errors = stt_environment_errors(config)
+        if args.live:
+            errors.extend(live_environment_errors(config))
+        if errors:
+            raise ConfigurationError("; ".join(errors))
+        application = build_application(config, live=args.live)
+        stt_provider = build_stt_provider(config)
+        loop = asyncio.get_running_loop()
+
+        async def answer(target, audio):
+            transcript = await stt_provider.transcribe(audio)
+            print(f"Heard ({target.id}): {transcript}", flush=True)
+            character = application.characters[target.character_id]
+            result = await application.orchestrator.perform(
+                Utterance(
+                    transcript,
+                    target.character_id,
+                    f"wake-{target.id}",
+                ),
+                character,
+                target.actor_id,
+            )
+            print(json.dumps({
+                "wake_target": target.id,
+                "transcript": transcript,
+                "character": target.character_id,
+                "actor": target.actor_id,
+                "source": result.plan.source.value,
+                "response": result.plan.text,
+                "played": result.played,
+                "stall_played": result.stall_played,
+            }, indent=2), flush=True)
+
+        def submit_query(target, audio):
+            asyncio.run_coroutine_threadsafe(answer(target, audio), loop).result()
+
+        on_query = submit_query
+    try:
+        await asyncio.to_thread(
+            listener.run,
+            lambda target: print(
+                f"WAKE {target.id}: character={target.character_id} actor={target.actor_id}",
+                flush=True,
+            ),
+            on_query=on_query,
+        )
+    except asyncio.CancelledError:
+        listener.stop()
+        print("\nWake listener stopped.", flush=True)
+        return 130
+    return 0
+
+
 async def _listen(args) -> int:
     config = load_config(args.config)
     errors = stt_environment_errors(config)
@@ -228,6 +340,8 @@ def main(argv=None) -> int:
             return asyncio.run(_llm_status(args.config))
         if args.command == "stt":
             return asyncio.run(_stt_status(args.config))
+        if args.command == "wake":
+            return asyncio.run(_wake(args))
         if args.command == "transcribe":
             return asyncio.run(_transcribe(args.config, args.audio))
         if args.command == "listen":
@@ -240,6 +354,7 @@ def main(argv=None) -> int:
         TranscriptionError,
         LookupError,
         RuntimeError,
+        WakeError,
     ) as exc:
         print(f"error: {exc}")
         return 2

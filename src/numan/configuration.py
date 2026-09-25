@@ -62,6 +62,7 @@ class STTConfig:
     endpoint: str
     api_key_env: str
     language: str
+    prompt: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,12 +73,30 @@ class MicrophoneConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class WakeTargetConfig:
+    id: str
+    phrases: tuple[str, ...]
+    character: str
+    actor: str
+
+
+@dataclass(frozen=True, slots=True)
+class WakeConfig:
+    enabled: bool
+    model_dir: str
+    threshold: float
+    score: float
+    targets: Mapping[str, WakeTargetConfig]
+
+
+@dataclass(frozen=True, slots=True)
 class NumanConfig:
     default_character: str
     default_actor: str
     llm: LLMConfig
     stt: STTConfig
     microphone: MicrophoneConfig
+    wake: WakeConfig
     characters: Mapping[str, CharacterConfig]
     voices: Mapping[str, VoiceConfig]
     audio_routes: Mapping[str, AudioRouteConfig]
@@ -133,6 +152,39 @@ class NumanConfig:
             errors.append("Deepgram STT requires endpoint and API key environment name")
         if self.microphone.sample_rate <= 0 or self.microphone.channels != 1:
             errors.append("microphone requires a positive sample rate and one channel")
+        phrases: dict[str, str] = {}
+        for target in self.wake.targets.values():
+            if target.character not in self.characters:
+                errors.append(
+                    f"wake target {target.id!r} references unknown character "
+                    f"{target.character!r}"
+                )
+            if target.actor not in self.actors:
+                errors.append(
+                    f"wake target {target.id!r} references unknown actor {target.actor!r}"
+                )
+            elif self.actors[target.actor].character != target.character:
+                errors.append(
+                    f"wake target {target.id!r} actor does not represent "
+                    f"{target.character!r}"
+                )
+            if not target.phrases:
+                errors.append(f"wake target {target.id!r} has no phrases")
+            for phrase in target.phrases:
+                normalized = " ".join(phrase.casefold().split())
+                if not normalized:
+                    errors.append(f"wake target {target.id!r} has an empty phrase")
+                elif normalized in phrases:
+                    errors.append(
+                        f"duplicate wake phrase {phrase!r} in {target.id!r} "
+                        f"and {phrases[normalized]!r}"
+                    )
+                else:
+                    phrases[normalized] = target.id
+        if self.wake.enabled and not self.wake.targets:
+            errors.append("wake detection is enabled but has no targets")
+        if not 0 < self.wake.threshold <= 1 or self.wake.score <= 0:
+            errors.append("wake threshold must be in (0, 1] and score must be positive")
         if errors:
             raise ConfigurationError("; ".join(errors))
 
@@ -148,6 +200,7 @@ def load_config(path: str | Path) -> NumanConfig:
         llm_raw = raw["llm"]
         stt_raw = raw["stt"]
         microphone_raw = raw["microphone"]
+        wake_raw = raw["wake"]
         characters = {
             key: CharacterConfig(
                 id=key,
@@ -202,11 +255,27 @@ def load_config(path: str | Path) -> NumanConfig:
                 endpoint=_string(stt_raw, "endpoint"),
                 api_key_env=_string(stt_raw, "api_key_env"),
                 language=_string(stt_raw, "language"),
+                prompt=str(stt_raw.get("prompt", "")),
             ),
             microphone=MicrophoneConfig(
                 device=_string(microphone_raw, "device"),
                 sample_rate=int(microphone_raw.get("sample_rate", 16_000)),
                 channels=int(microphone_raw.get("channels", 1)),
+            ),
+            wake=WakeConfig(
+                enabled=bool(wake_raw.get("enabled", False)),
+                model_dir=_string(wake_raw, "model_dir"),
+                threshold=float(wake_raw.get("threshold", 0.20)),
+                score=float(wake_raw.get("score", 1.0)),
+                targets={
+                    key: WakeTargetConfig(
+                        id=key,
+                        phrases=tuple(value.get("phrases", ())),
+                        character=_string(value, "character"),
+                        actor=_string(value, "actor"),
+                    )
+                    for key, value in _table(wake_raw, "targets").items()
+                },
             ),
             characters=characters,
             voices=voices,
