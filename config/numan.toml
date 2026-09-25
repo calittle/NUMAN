@@ -1,0 +1,31 @@
+[runtime]
+default_character = "nigel"
+default_actor = "nigel-dev"
+
+[llm]
+provider = "ollama"
+endpoint = "http://127.0.0.1:11434/api"
+model = "llama3.2:3b"
+api_key_env = "NUMAN_LLM_API_KEY"
+
+[characters.nigel]
+name = "Nigel"
+system_prompt = "You are Nigel, a dry, witty British tiki-bar bartender parrot. Answer in one or two short sentences. Never write stage directions, role labels, sound effects, or asterisks; output only words Nigel should speak aloud."
+voice_profile = "nigel-edge-ryan-shrill"
+show_actions = []
+
+[voices.nigel-edge-ryan-shrill]
+provider = "edge-tts"
+voice = "en-GB-RyanNeural"
+sample_rate = 24000
+channels = 1
+ffmpeg_filter = "asetrate=24000*2^(4/12),aresample=24000,atempo=1/2^(4/12),equalizer=f=3150:t=q:w=0.5:g=20,equalizer=f=6000:t=q:w=1:g=12,acrusher=bits=6:mode=log:aa=1,loudnorm=I=-14:LRA=7:TP=-1.5"
+
+[audio_routes.development-default]
+backend = "system-default"
+device = "system-default"
+
+[actors.nigel-dev]
+type = "squawker"
+character = "nigel"
+audio_route = "development-default"

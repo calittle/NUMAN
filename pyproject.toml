@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "numan"
+version = "0.1.0"
+description = "Multi-character AI show-control engine"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+numan = "numan.cli:main"
+
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.28",
+  "pytest>=8.0",
+]
+live = [
+  "edge-tts>=7.0",
+  "numpy>=2.0",
+  "sounddevice>=0.5",
+]
+api = [
+  "fastapi>=0.115",
+  "uvicorn>=0.34",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/numan"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
