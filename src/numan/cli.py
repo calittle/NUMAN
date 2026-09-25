@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import importlib.util
 import json
+import shutil
+import sys
 import threading
 from pathlib import Path
 
@@ -37,6 +40,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="numan")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    subparsers.add_parser("doctor", help="check whether NUMAN is ready to run")
 
     devices = subparsers.add_parser("devices", help="inspect audio devices")
     device_commands = devices.add_subparsers(dest="devices_command", required=True)
@@ -381,11 +386,92 @@ async def _llm_status(path: Path) -> int:
     return 0 if available else 1
 
 
+async def _doctor(path: Path) -> int:
+    """Plain-language readiness report intended for the installation owner."""
+    config = load_config(path)
+    checks: list[tuple[str, bool, str]] = []
+    setup_hint = (
+        "double-click scripts\\windows\\SETUP-NUMAN.cmd"
+        if sys.platform == "win32"
+        else "install FFmpeg with your system package manager"
+    )
+
+    checks.append((
+        "Python",
+        sys.version_info >= (3, 12),
+        f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+    ))
+    checks.append((
+        "FFmpeg",
+        shutil.which("ffmpeg") is not None,
+        "ready" if shutil.which("ffmpeg") else f"not found; {setup_hint}",
+    ))
+    checks.append((
+        "Voice software",
+        importlib.util.find_spec("edge_tts") is not None,
+        "ready" if importlib.util.find_spec("edge_tts") else "not installed; rerun setup",
+    ))
+
+    stt_errors = stt_environment_errors(config)
+    checks.append((
+        "Speech recognition",
+        not stt_errors,
+        "ready" if not stt_errors else "; ".join(stt_errors),
+    ))
+    wake_errors = SherpaKeywordDetector.status_errors(build_wake_config(config))
+    checks.append((
+        "Wake words",
+        not wake_errors,
+        "ready" if not wake_errors else "; ".join(wake_errors),
+    ))
+
+    try:
+        inputs = list_audio_inputs()
+        outputs = list_audio_outputs()
+        audio_detail = f"{len(inputs)} input(s), {len(outputs)} output(s) found"
+        audio_ok = bool(inputs and outputs)
+    except Exception as exc:
+        audio_ok = False
+        audio_detail = f"audio check failed: {exc}"
+    checks.append(("Audio devices", audio_ok, audio_detail))
+
+    if config.llm.provider == "ollama":
+        try:
+            provider = OllamaLLMProvider(
+                OllamaConfig(config.llm.endpoint, config.llm.model, 3.0)
+            )
+            models = await provider.list_models()
+            llm_ok = config.llm.model in models
+            llm_detail = (
+                f"{config.llm.model} is ready"
+                if llm_ok else f"run: ollama pull {config.llm.model}"
+            )
+        except Exception as exc:
+            llm_ok = False
+            llm_detail = f"Ollama is not responding: {exc}"
+    else:
+        llm_ok = True
+        llm_detail = f"configured provider: {config.llm.provider}"
+    checks.append(("Local brain", llm_ok, llm_detail))
+
+    print("NUMAN readiness check\n")
+    for name, ok, detail in checks:
+        print(f"[{'OK' if ok else 'FIX'}] {name}: {detail}")
+    problems = sum(not ok for _, ok, _ in checks)
+    if problems:
+        print(f"\n{problems} item(s) need attention. See docs/ROB-GUIDE.md.")
+        return 1
+    print("\nEverything needed for normal operation is ready.")
+    return 0
+
+
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
     try:
         if args.command == "devices":
             return _devices_list(args.devices_command == "inputs")
+        if args.command == "doctor":
+            return asyncio.run(_doctor(args.config))
         if args.command == "config":
             return _config_validate(args.config, args.live)
         if args.command == "llm":

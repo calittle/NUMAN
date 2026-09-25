@@ -5,3 +5,4 @@ __pycache__/
 *.py[cod]
 models/*.bin
 models/sherpa-onnx-*/
+tools/whisper/

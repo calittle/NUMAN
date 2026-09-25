@@ -12,6 +12,7 @@ from numan.transcription import (
     TranscriptionError,
     WhisperCppConfig,
     WhisperCppSTTProvider,
+    resolve_whisper_command,
 )
 
 
@@ -66,6 +67,16 @@ class DeepgramProviderTests(unittest.IsolatedAsyncioTestCase):
 
 
 class WhisperProviderTests(unittest.TestCase):
+    def test_finds_portable_windows_command_next_to_python(self):
+        with tempfile.TemporaryDirectory() as directory:
+            python = Path(directory) / "python.exe"
+            command = Path(directory) / "whisper-cli.exe"
+            command.touch()
+            with patch("numan.transcription.shutil.which", return_value=None), patch(
+                "numan.transcription.sys.platform", "win32"
+            ), patch("numan.transcription.sys.executable", str(python)):
+                self.assertEqual(resolve_whisper_command("whisper-cli"), command)
+
     def test_status_reports_missing_command_and_model(self):
         provider = WhisperCppSTTProvider(
             WhisperCppConfig(Path("/definitely/missing/model.bin"), "missing-whisper")

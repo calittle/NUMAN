@@ -6,6 +6,7 @@ import asyncio
 import json
 import os
 import shutil
+import sys
 import tempfile
 import threading
 import time
@@ -39,7 +40,14 @@ class WhisperCppConfig:
 
 class WhisperCppSTTProvider:
     def __init__(self, config: WhisperCppConfig) -> None:
-        self._config = config
+        command = resolve_whisper_command(config.command)
+        self._config = WhisperCppConfig(
+            model_path=config.model_path,
+            command=str(command),
+            language=config.language,
+            timeout_s=config.timeout_s,
+            prompt=config.prompt,
+        )
 
     def status_errors(self) -> list[str]:
         errors = []
@@ -92,6 +100,22 @@ class WhisperCppSTTProvider:
         if not text:
             raise TranscriptionError("no speech was recognized")
         return text
+
+
+def resolve_whisper_command(command: str) -> Path:
+    """Find whisper.cpp from PATH, the venv, or NUMAN's portable tools folder."""
+    found = shutil.which(command)
+    if found:
+        return Path(found)
+    suffix = ".exe" if sys.platform == "win32" else ""
+    name = Path(command).name
+    if suffix and not name.casefold().endswith(suffix):
+        name += suffix
+    candidates = (
+        Path(sys.executable).parent / name,
+        Path(__file__).resolve().parents[2] / "tools" / "whisper" / name,
+    )
+    return next((path for path in candidates if path.is_file()), Path(command))
 
 
 @dataclass(frozen=True, slots=True)

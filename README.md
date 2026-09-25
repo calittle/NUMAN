@@ -13,6 +13,37 @@ The first actor slice adds a Squawker actor, Edge TTS/ffmpeg voice adapter,
 per-output serialized playback, and orchestration timings. The CLI is safe by
 default: it uses fake synthesis and a null audio backend.
 
+## Windows show-computer setup
+
+The supported production target is 64-bit Windows with Python 3.12. For the
+nontechnical installation, daily-operation, configuration, backup, and
+troubleshooting instructions, use [Rob's NUMAN Guide](docs/ROB-GUIDE.md).
+The one-time installer and double-clickable start/check launchers are in
+`scripts/windows`. Run `numan doctor` at any time for a plain-language
+readiness report.
+
+## Platform support
+
+NUMAN keeps its configuration, show logic, speech pipeline, and tests
+operating-system neutral. Playback uses Windows PowerShell, macOS `afplay`, or
+Linux PulseAudio; dedicated device routing uses `sounddevice` on all three.
+The production installer above is Windows-specific because that is the show
+computer Rob will operate. Development is exercised on macOS. Linux is
+supported by the code but has not yet had a full hardware dress rehearsal.
+
+On macOS or Linux, install Python 3.12 or newer plus FFmpeg, then run:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -e ".[dev,live,api,wake]"
+.venv/bin/numan doctor
+```
+
+The local speech and wake model paths are the same on every platform. Follow
+the model references in the voice-input and wake-word sections below. Ollama
+is optional only when another configured LLM provider is used; the checked-in
+configuration expects it.
+
 ## Development
 
 ```bash

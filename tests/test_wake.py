@@ -15,11 +15,22 @@ from numan.wake import (
     WakeRegistry,
     WakeTarget,
     normalize_phrase,
+    sherpa_cli_path,
 )
 from numan.wake import WakeListener
 
 
 class WakeRegistryTests(unittest.TestCase):
+    def test_finds_windows_compiler_next_to_python(self):
+        with tempfile.TemporaryDirectory() as directory:
+            python = Path(directory) / "python.exe"
+            command = Path(directory) / "sherpa-onnx-cli.exe"
+            command.touch()
+            with patch("numan.wake.sys.platform", "win32"), patch(
+                "numan.wake.sys.executable", str(python)
+            ):
+                self.assertEqual(sherpa_cli_path(), command)
+
     def test_resolves_phrase_to_character_and_actor(self):
         nigel = WakeTarget("nigel", ("Hey Nigel",), "nigel", "bird-one")
         captain = WakeTarget("captain", ("Hey Captain", "Captain"), "captain", "bird-two")

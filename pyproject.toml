@@ -31,6 +31,7 @@ wake = [
   "pypinyin>=0.55",
   "sentencepiece>=0.2",
   "sherpa-onnx>=1.12",
+  "sherpa-onnx-bin>=1.12",
 ]
 
 [tool.hatch.build.targets.wheel]

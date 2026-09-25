@@ -62,7 +62,8 @@ class SherpaWakeConfig:
 
 
 def sherpa_cli_path() -> Path:
-    adjacent = Path(sys.executable).parent / "sherpa-onnx-cli"
+    name = "sherpa-onnx-cli.exe" if sys.platform == "win32" else "sherpa-onnx-cli"
+    adjacent = Path(sys.executable).parent / name
     return adjacent if adjacent.is_file() else Path("sherpa-onnx-cli")
 
 
