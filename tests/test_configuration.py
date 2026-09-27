@@ -23,6 +23,11 @@ class ConfigurationTests(unittest.TestCase):
             config.voices["grog-edge-ryan-shrill"].tiki_console.barrel_chest_db,
             6,
         )
+        self.assertEqual(config.voices["polly-edge-jenny-bright"].rate, "+4%")
+        self.assertEqual(
+            config.voices["polly-edge-jenny-bright"].tiki_console.coconut_radio_bits,
+            11,
+        )
 
     def test_unknown_actor_route_is_rejected(self):
         source = (PROJECT_ROOT / "config/numan.toml").read_text(encoding="utf-8")
