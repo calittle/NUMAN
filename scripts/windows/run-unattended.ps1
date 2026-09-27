@@ -28,6 +28,10 @@ function Test-Ollama {
 $OllamaProcess = $null
 try {
     Log "Supervisor started as $env:USERDOMAIN\$env:USERNAME."
+    try {
+        $Viewer = Join-Path $PSScriptRoot "watch-numan-log.ps1"
+        Start-Process -FilePath "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -WindowStyle Normal -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$Viewer`""
+    } catch { Log "Could not open log viewer: $($_.Exception.Message)" }
     while ($true) {
         try {
             if (-not (Test-Ollama)) {
@@ -61,3 +65,4 @@ try {
     $Mutex.ReleaseMutex()
     $Mutex.Dispose()
 }
+
