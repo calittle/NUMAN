@@ -177,9 +177,11 @@ ports. Keep each adapter in its labeled port.
 
 ### Adjusting a voice
 
-Voice controls are under each `[voices....tiki_console]` heading. Make small
-changes and test one bird. The comments in the file explain every control.
-Restore the backup if the result sounds worse.
+Voice delivery controls (`rate`, `volume`, and `pitch`) sit directly under each
+`[voices...]` heading. Tone controls are under the matching
+`[voices....tiki_console]` heading. Make small changes and test one bird. The
+comments in the file explain every control. Restore the backup if the result
+sounds worse.
 
 ### Changing wake phrases
 

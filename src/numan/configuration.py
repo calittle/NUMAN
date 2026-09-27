@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import tomllib
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
@@ -24,6 +25,9 @@ class CharacterConfig:
 @dataclass(frozen=True, slots=True)
 class TikiConsoleConfig:
     perch_pitch_semitones: float
+    barrel_chest_hz: int
+    barrel_chest_db: float
+    barrel_chest_width: float
     beak_bite_hz: int
     beak_bite_db: float
     beak_bite_width: float
@@ -38,6 +42,9 @@ class VoiceConfig:
     id: str
     provider: str
     voice: str
+    rate: str
+    volume: str
+    pitch: str
     sample_rate: int
     channels: int
     ffmpeg_filter: str | None
@@ -158,6 +165,12 @@ class NumanConfig:
             if console is not None:
                 if not -12 <= console.perch_pitch_semitones <= 12:
                     errors.append(f"voice {voice.id!r} perch pitch must be -12 to 12")
+                if not 80 <= console.barrel_chest_hz <= 1_000:
+                    errors.append(f"voice {voice.id!r} barrel chest frequency is out of range")
+                if not -20 <= console.barrel_chest_db <= 20:
+                    errors.append(f"voice {voice.id!r} barrel chest must be -20 to 20 dB")
+                if not 0.1 <= console.barrel_chest_width <= 10:
+                    errors.append(f"voice {voice.id!r} barrel chest width must be 0.1 to 10")
                 if not 100 <= console.beak_bite_hz <= 12_000:
                     errors.append(f"voice {voice.id!r} beak bite frequency is out of range")
                 if not -30 <= console.beak_bite_db <= 30:
@@ -172,6 +185,15 @@ class NumanConfig:
                     errors.append(f"voice {voice.id!r} coconut radio must be 2 to 16 bits")
                 if not -30 <= console.rum_barrel_lufs <= -5:
                     errors.append(f"voice {voice.id!r} rum barrel must be -30 to -5 LUFS")
+            for setting, suffix, low, high in (
+                (voice.rate, "%", -50, 100),
+                (voice.volume, "%", -100, 100),
+                (voice.pitch, "Hz", -100, 100),
+            ):
+                if not _voice_setting_in_range(setting, suffix, low, high):
+                    errors.append(
+                        f"voice {voice.id!r} has invalid {suffix} setting {setting!r}"
+                    )
         for actor in self.actors.values():
             if actor.character not in self.characters:
                 errors.append(
@@ -304,6 +326,9 @@ def load_config(path: str | Path) -> NumanConfig:
                 id=key,
                 provider=_string(value, "provider"),
                 voice=_string(value, "voice"),
+                rate=str(value.get("rate", "+0%")),
+                volume=str(value.get("volume", "+0%")),
+                pitch=str(value.get("pitch", "+0Hz")),
                 sample_rate=int(value.get("sample_rate", 24_000)),
                 channels=int(value.get("channels", 1)),
                 ffmpeg_filter=value.get("ffmpeg_filter"),
@@ -421,6 +446,9 @@ def _tiki_console(raw: Any) -> TikiConsoleConfig | None:
         raise TypeError("tiki_console must be a table")
     return TikiConsoleConfig(
         perch_pitch_semitones=float(raw["perch_pitch_semitones"]),
+        barrel_chest_hz=int(raw["barrel_chest_hz"]),
+        barrel_chest_db=float(raw["barrel_chest_db"]),
+        barrel_chest_width=float(raw["barrel_chest_width"]),
         beak_bite_hz=int(raw["beak_bite_hz"]),
         beak_bite_db=float(raw["beak_bite_db"]),
         beak_bite_width=float(raw["beak_bite_width"]),
@@ -429,3 +457,11 @@ def _tiki_console(raw: Any) -> TikiConsoleConfig | None:
         coconut_radio_bits=int(raw["coconut_radio_bits"]),
         rum_barrel_lufs=float(raw["rum_barrel_lufs"]),
     )
+
+
+def _voice_setting_in_range(value: str, suffix: str, low: int, high: int) -> bool:
+    match = re.fullmatch(rf"[+-](\d+){re.escape(suffix)}", value)
+    if match is None:
+        return False
+    amount = int(match.group(1)) * (-1 if value.startswith("-") else 1)
+    return low <= amount <= high

@@ -134,14 +134,15 @@ character owns how it responds through its prompt and character data.
 
 ### Tiki voice console
 
-Each configured voice can use a commented `[voices.<id>.tiki_console]` table
-instead of maintaining a raw ffmpeg expression. Its controls include perch
-pitch, beak bite, feather sparkle, coconut-radio crunch, and rum-barrel
-loudness. The checked-in values reproduce the current Captain Grog and Polly sounds;
-edit a value and use `numan ask --character <id> --live "Hello"` to audition
-it. Configuration validation rejects unsafe ranges. Advanced profiles may omit
-`tiki_console` and provide `ffmpeg_filter` directly as an escape hatch, but a
-profile cannot use both.
+Each configured voice supports Edge TTS `rate`, `volume`, and `pitch` controls.
+It can also use a commented `[voices.<id>.tiki_console]` table instead of
+maintaining a raw ffmpeg expression. The console controls include perch pitch,
+barrel-chest weight, beak bite, feather sparkle, coconut-radio crunch, and
+rum-barrel loudness. Edit one value at a time and use
+`numan ask --character <id> --live "Hello"` to audition it. Configuration
+validation rejects unsafe ranges. Advanced profiles may omit `tiki_console`
+and provide `ffmpeg_filter` directly as an escape hatch, but a profile cannot
+use both.
 
 ## Semantic show control
 

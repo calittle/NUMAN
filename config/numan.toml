@@ -57,7 +57,7 @@ actor = "polly-dev"
 
 [characters.grog]
 name = "Captain Grog"
-system_prompt = "You are Captain Grog, a snarky, grizzled old British pirate parrot who tends a tiki bar. Your exterior is gruff and your insults are sharp, barbed, and often pun-laden, but underneath you are loyal and soft-hearted. Never become cruel. Answer in one or two short sentences. Never write stage directions, role labels, sound effects, or asterisks; output only words Captain Grog should speak aloud. Never invent cocktail ingredients or recipes. If a drink name is unclear or you do not know its established recipe, ask the guest to repeat the name or admit that you do not know."
+system_prompt = "You are Captain Grog, a snarky, grizzled old British pirate parrot who tends a tiki bar. Your exterior is gruff and your insults are sharp, barbed, and often pun-laden, but underneath you are loyal and soft-hearted. Speak with a rolling, weathered pirate cadence. Favor contractions, punchy clauses, and occasional nautical phrasing. Avoid formal sentence structure, repetitive arrs, and long pauses. Never become cruel. Answer in one or two short sentences. Never write stage directions, role labels, sound effects, or asterisks; output only words Captain Grog should speak aloud. Never invent cocktail ingredients or recipes. If a drink name is unclear or you do not know its established recipe, ask the guest to repeat the name or admit that you do not know."
 voice_profile = "grog-edge-ryan-shrill"
 show_actions = ["storm", "lightning", "volcano_rumble", "blackout", "present_jet_pilot", "present_suffering_bastard"]
 
@@ -70,35 +70,48 @@ show_actions = ["storm", "lightning", "present_jet_pilot", "present_suffering_ba
 [voices.grog-edge-ryan-shrill]
 provider = "edge-tts"
 voice = "en-GB-RyanNeural"
+rate = "-8%"
+volume = "+5%"
+pitch = "-20Hz"
 sample_rate = 24000
 channels = 1
 
 # Captain Grog's tiki voice console. These values reproduce his current sound.
 [voices.grog-edge-ryan-shrill.tiki_console]
 # Raise/lower the voice in semitones without changing speaking speed. Range: -12..12.
-perch_pitch_semitones = 4
+perch_pitch_semitones = -1
+# Low-mid weight for a fuller, weathered chest tone.
+barrel_chest_hz = 220
+barrel_chest_db = 6
+barrel_chest_width = 1.0
 # The main nasal beak tone. Hz chooses its location; dB controls its strength.
-beak_bite_hz = 3150
-beak_bite_db = 20
+beak_bite_hz = 2600
+beak_bite_db = 8
 # Focus of the beak tone. Lower is broader; higher is narrower and honkier.
-beak_bite_width = 0.5
+beak_bite_width = 0.8
 # High-frequency feather sheen. More dB is brighter and more piercing.
-feather_sparkle_hz = 6000
-feather_sparkle_db = 12
+feather_sparkle_hz = 5500
+feather_sparkle_db = 3
 # Lo-fi Squawker texture. Lower bits are crunchier; 16 is nearly clean. Range: 2..16.
-coconut_radio_bits = 6
+coconut_radio_bits = 9
 # Final loudness target. Closer to zero is louder. Sensible range: -30..-5 LUFS.
-rum_barrel_lufs = -14
+rum_barrel_lufs = -12
 
 [voices.polly-edge-jenny-bright]
 provider = "edge-tts"
 voice = "en-US-JennyNeural"
+rate = "+0%"
+volume = "+0%"
+pitch = "+0Hz"
 sample_rate = 24000
 channels = 1
 
 # Polly keeps a slightly lower perch, gentler beak bite, and cleaner radio.
 [voices.polly-edge-jenny-bright.tiki_console]
 perch_pitch_semitones = 3
+barrel_chest_hz = 240
+barrel_chest_db = 0
+barrel_chest_width = 1.0
 beak_bite_hz = 3500
 beak_bite_db = 14
 beak_bite_width = 0.7

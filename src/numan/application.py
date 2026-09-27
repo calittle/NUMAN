@@ -136,10 +136,14 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
         profiles = {
             voice.id: VoiceProfile(
                 id=voice.id, voice=voice.voice,
+                rate=voice.rate, volume=voice.volume, pitch=voice.pitch,
                 ffmpeg_filter=(
                     tiki_console_filter(
                         sample_rate=voice.sample_rate,
                         perch_pitch_semitones=voice.tiki_console.perch_pitch_semitones,
+                        barrel_chest_hz=voice.tiki_console.barrel_chest_hz,
+                        barrel_chest_db=voice.tiki_console.barrel_chest_db,
+                        barrel_chest_width=voice.tiki_console.barrel_chest_width,
                         beak_bite_hz=voice.tiki_console.beak_bite_hz,
                         beak_bite_db=voice.tiki_console.beak_bite_db,
                         beak_bite_width=voice.tiki_console.beak_bite_width,

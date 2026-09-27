@@ -23,6 +23,9 @@ class AudioAsset:
 class VoiceProfile:
     id: str
     voice: str
+    rate: str = "+0%"
+    volume: str = "+0%"
+    pitch: str = "+0Hz"
     ffmpeg_filter: str | None = None
     sample_rate: int = 24_000
     channels: int = 1
@@ -40,6 +43,9 @@ def tiki_console_filter(
     *,
     sample_rate: int,
     perch_pitch_semitones: float,
+    barrel_chest_hz: int,
+    barrel_chest_db: float,
+    barrel_chest_width: float,
     beak_bite_hz: int,
     beak_bite_db: float,
     beak_bite_width: float,
@@ -53,6 +59,7 @@ def tiki_console_filter(
     return (
         f"asetrate={sample_rate}*2^({pitch}/12),aresample={sample_rate},"
         f"atempo=1/2^({pitch}/12),"
+        f"equalizer=f={barrel_chest_hz}:t=q:w={barrel_chest_width:g}:g={barrel_chest_db:g},"
         f"equalizer=f={beak_bite_hz}:t=q:w={beak_bite_width:g}:g={beak_bite_db:g},"
         f"equalizer=f={feather_sparkle_hz}:t=q:w=1:g={feather_sparkle_db:g},"
         f"acrusher=bits={coconut_radio_bits}:mode=log:aa=1,"
@@ -96,6 +103,9 @@ class EdgeTTSVoiceProvider:
             await self._run(
                 *self._edge_tts_command,
                 "--voice", profile.voice,
+                f"--rate={profile.rate}",
+                f"--volume={profile.volume}",
+                f"--pitch={profile.pitch}",
                 "--write-media", str(raw),
                 "-f", str(prompt),
             )

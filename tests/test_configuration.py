@@ -16,6 +16,11 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(application.actors.get("polly-dev").character_id, "polly")
         self.assertEqual(
             config.voices["grog-edge-ryan-shrill"].tiki_console.coconut_radio_bits,
+            9,
+        )
+        self.assertEqual(config.voices["grog-edge-ryan-shrill"].rate, "-8%")
+        self.assertEqual(
+            config.voices["grog-edge-ryan-shrill"].tiki_console.barrel_chest_db,
             6,
         )
 
@@ -42,6 +47,15 @@ class ConfigurationTests(unittest.TestCase):
     def test_live_environment_reports_missing_tools_without_crashing(self):
         config = load_config(PROJECT_ROOT / "config/numan.toml")
         self.assertIsInstance(live_environment_errors(config), list)
+
+    def test_invalid_voice_prosody_is_rejected(self):
+        source = (PROJECT_ROOT / "config/numan.toml").read_text(encoding="utf-8")
+        source = source.replace('rate = "-8%"', 'rate = "very slow"')
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "invalid.toml"
+            path.write_text(source, encoding="utf-8")
+            with self.assertRaisesRegex(ConfigurationError, "invalid"):
+                load_config(path)
 
     def test_character_cannot_reference_unavailable_show_action(self):
         source = (PROJECT_ROOT / "config/numan.toml").read_text(encoding="utf-8")
