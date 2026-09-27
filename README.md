@@ -19,12 +19,14 @@ default: it uses fake synthesis and a null audio backend.
 
 ## Windows show-computer setup
 
-The supported production target is 64-bit Windows with Python 3.12. For the
+The supported production target is 64-bit Windows with Python 3.12 or newer.
+Python 3.12 and 3.14 are exercised by the project. For the
 nontechnical installation, daily-operation, configuration, backup, and
 troubleshooting instructions, use [Rob's NUMAN Guide](docs/ROB-GUIDE.md).
 The one-time installer and double-clickable start/check launchers are in
-`scripts/windows`. Run `numan doctor` at any time for a plain-language
-readiness report.
+`scripts/windows`. `UPDATE-NUMAN.cmd` safely fast-forwards an installed checkout
+and refreshes its environment. Run `numan doctor` at any time for a
+plain-language readiness report.
 
 ## Platform support
 
@@ -42,6 +44,16 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e ".[dev,live,api,wake]"
 .venv/bin/numan doctor
 ```
+
+Update an existing macOS or Linux checkout with:
+
+```bash
+./scripts/update-numan.sh
+```
+
+Both update paths use `git pull --ff-only`; they never reset, stash, or discard
+local changes. Stop NUMAN before updating. If a local configuration change
+overlaps an incoming update, Git stops so the conflict can be reviewed.
 
 The local speech and wake model paths are the same on every platform. Follow
 the model references in the voice-input and wake-word sections below. Ollama

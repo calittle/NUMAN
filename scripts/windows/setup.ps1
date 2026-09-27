@@ -30,20 +30,21 @@ function Install-WingetApp($CommandName, $PackageId, $FriendlyName) {
 
 Step "Checking Python"
 if (-not (Get-Command py -ErrorAction SilentlyContinue)) {
-    throw "Python is missing. Install Python 3.12 from python.org, check 'Add Python to PATH', reopen PowerShell, and rerun this script."
+    throw "Python is missing. Install Python 3.12 or newer from python.org, check 'Add Python to PATH', reopen PowerShell, and rerun this script."
 }
-& py -3.12 -c "import sys; print(sys.version)"
+& py -3 -c "import sys; print(sys.version); raise SystemExit(sys.version_info < (3, 12))"
 if ($LASTEXITCODE -ne 0) {
-    throw "Python 3.12 is required. Install it from python.org and rerun this script."
+    throw "Python 3.12 or newer is required. Install it from python.org and rerun this script."
 }
 
+Install-WingetApp "git" "Git.Git" "Git"
 Install-WingetApp "ffmpeg" "Gyan.FFmpeg" "FFmpeg"
 Install-WingetApp "ollama" "Ollama.Ollama" "Ollama"
 $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
 
 Step "Creating NUMAN's private Python environment"
 if (-not (Test-Path ".venv\Scripts\python.exe")) {
-    & py -3.12 -m venv .venv
+    & py -3 -m venv .venv
 }
 & .\.venv\Scripts\python.exe -m pip install --upgrade pip
 & .\.venv\Scripts\python.exe -m pip install -e ".[dev,live,api,wake]"

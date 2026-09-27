@@ -5,11 +5,12 @@ understand Python, AI models, or audio programming to operate NUMAN.
 
 Keep drinks away from the laptop. Captain Grog can survive rum. Windows cannot.
 
-## The three things to remember
+## The four things to remember
 
 1. Double-click `CHECK-NUMAN.cmd` when something seems wrong.
 2. Double-click `START-NUMAN.cmd` to start the birds.
-3. Keep the black PowerShell window open while NUMAN is running.
+3. Double-click `UPDATE-NUMAN.cmd` when Andy says an update is ready.
+4. Keep the black PowerShell window open while NUMAN is running.
 
 ## First-time installation
 
@@ -17,13 +18,18 @@ Andy should be present for this part.
 
 ### 1. Install Python
 
-Install **64-bit Python 3.12** from [python.org](https://www.python.org/downloads/).
+Install **64-bit Python 3.12 or newer** from [python.org](https://www.python.org/downloads/).
 On the first installer screen, check **Add Python to PATH**.
 
-Do not install a newer or older version unless the project requirements have
-been updated and tested.
+NUMAN is tested on Python 3.12 and Python 3.14. Do not install an older version.
 
-### 2. Put NUMAN in a permanent folder
+### 2. Install Git
+
+Install [Git for Windows](https://git-scm.com/download/win) with its normal
+recommended options. Git is what allows `UPDATE-NUMAN.cmd` to download updates
+without replacing local configuration or models.
+
+### 3. Put NUMAN in a permanent folder
 
 Use a simple location that will not move, for example:
 
@@ -33,7 +39,16 @@ C:\NUMAN\numan
 
 Do not run it from Downloads, OneDrive, or a USB stick.
 
-### 3. Run the setup script
+Andy should install NUMAN with Git rather than downloading a ZIP:
+
+```powershell
+git clone https://github.com/calittle/NUMAN.git C:\NUMAN\numan
+```
+
+An older installation copied without its hidden `.git` folder cannot use the
+updater and should be reinstalled with this command.
+
+### 4. Run the setup script
 
 In File Explorer, open `scripts`, then `windows`, and double-click
 `SETUP-NUMAN.cmd`. If Windows shows a warning, choose **Run anyway** only if
@@ -245,10 +260,44 @@ Do not keep guessing at punctuation in the TOML file.
 
 ## Updating NUMAN
 
-Andy should provide the update and say when it is safe to install. After the new
-files are in place, rerun setup. It keeps downloaded models and updates the
-private Python environment. Then double-click `CHECK-NUMAN.cmd` before opening
-the bar.
+Only update when Andy says a new version is ready. Do not update during a show
+or immediately before opening the bar.
+
+### Normal update
+
+1. Stop NUMAN with **Ctrl-C** and wait for `Wake listener stopped.`
+2. Make sure the computer is connected to the internet.
+3. In File Explorer, open the NUMAN folder, then `scripts`, then `windows`.
+4. Double-click `UPDATE-NUMAN.cmd`.
+5. Leave the black window open while it downloads and checks the update. This
+   can take several minutes.
+6. Wait for the green message:
+
+```text
+NUMAN is up to date and ready.
+```
+
+7. Press any key to close the updater. NUMAN can now be started normally with
+   `START-NUMAN.cmd`.
+
+The updater keeps downloaded models and local configuration, refreshes NUMAN's
+private Python environment, rebuilds wake phrases, validates the configuration,
+and runs the normal readiness check. A warning about local changes is expected
+when this installation has customized microphone, speaker, or show settings.
+
+### If the update stops with an error
+
+The updater never resets, hides, or discards local files. If a local change
+overlaps an incoming update, Git stops instead of guessing. The currently
+installed NUMAN files remain on the computer.
+
+Do not delete files, reinstall Git, or run commands copied from the internet.
+Take a photo of the complete black window, including the first red error, and
+send it to Andy. Leave the window open until the error has been recorded.
+
+If the download worked but the final readiness check shows a `[FIX]` line, the
+update itself succeeded. Follow that line or send Andy a photo before starting
+the birds.
 
 ## What to back up
 
