@@ -1,6 +1,7 @@
 import tempfile
 import threading
 import time
+import types
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -11,6 +12,8 @@ from numan.application import PROJECT_ROOT, build_wake_registry
 from numan.configuration import ConfigurationError, load_config
 from numan.wake import (
     SpeechCapture,
+    SherpaKeywordDetector,
+    SherpaWakeConfig,
     WakeError,
     WakeRegistry,
     WakeTarget,
@@ -88,6 +91,47 @@ class WakeRegistryTests(unittest.TestCase):
 
         self.assertFalse(worker.is_alive())
         self.assertEqual(detected, [target])
+
+
+class SherpaKeywordDetectorTests(unittest.TestCase):
+    def test_detection_returns_keyword_and_starts_a_fresh_stream(self):
+        class Stream:
+            def __init__(self):
+                self.decoded = False
+
+            def accept_waveform(self, sample_rate, samples):
+                self.sample_rate = sample_rate
+                self.samples = samples
+
+        class Spotter:
+            def __init__(self, **kwargs):
+                self.streams = []
+
+            def create_stream(self):
+                stream = Stream()
+                self.streams.append(stream)
+                return stream
+
+            def is_ready(self, stream):
+                return not stream.decoded
+
+            def decode_stream(self, stream):
+                stream.decoded = True
+
+            def get_result(self, stream):
+                return types.SimpleNamespace(keyword="hey captain grog")
+
+        module = types.SimpleNamespace(KeywordSpotter=Spotter)
+        config = SherpaWakeConfig(Path("models"))
+        with patch.dict("sys.modules", {"sherpa_onnx": module}):
+            detector = SherpaKeywordDetector(config, Path("keywords.txt"))
+        original_stream = detector._stream
+
+        self.assertEqual(
+            detector.process(np.zeros(512, dtype=np.int16)),
+            "hey captain grog",
+        )
+        self.assertIsNot(detector._stream, original_stream)
 
 
 class SpeechCaptureTests(unittest.TestCase):

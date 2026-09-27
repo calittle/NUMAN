@@ -3,6 +3,10 @@
 NUMAN is an evolving multi-character AI show-control engine for interactive
 themed entertainment.
 
+NUMAN is source-available for personal and noncommercial use under the
+[PolyForm Noncommercial License 1.0.0](LICENSE). Commercial use requires a
+separate written license from the copyright holder.
+
 The current implementation is a platform-neutral, typed, fast-first dispatcher.
 It includes stable text normalization and routine precedence, JSON-backed
 exact caches and response pools, structured-data and LLM provider boundaries,
@@ -304,3 +308,10 @@ alias resolution live in `numan.recipes`. The initial specifications use the
 International Bartenders Association list and Pusser's published Painkiller
 formula. This provider can later be replaced or augmented by Kapu Tracker
 without changing dispatch or orchestration.
+
+## Acknowledgments
+
+NUMAN was inspired by lessons learned from the
+[Nigel animatronic parrot project](https://github.com/Stothe/nigel). NUMAN is
+a separately structured, multi-character implementation with its own runtime,
+show-control integrations, configuration model, and operator tooling.

@@ -130,7 +130,7 @@ class SherpaKeywordDetector:
             provider="cpu",
             num_threads=1,
         )
-        self._stream = self._spotter.create_stream()
+        self.reset()
 
     @classmethod
     def status_errors(cls, config: SherpaWakeConfig) -> list[str]:
@@ -154,20 +154,22 @@ class SherpaKeywordDetector:
     def process(self, pcm_int16) -> str | None:
         import numpy as np
 
-        self._stream.accept_waveform(
-            self._sample_rate, pcm_int16.astype(np.float32) / 32768.0
-        )
+        samples = pcm_int16.astype(np.float32) / 32768.0
+        self._stream.accept_waveform(self._sample_rate, samples)
         while self._spotter.is_ready(self._stream):
             self._spotter.decode_stream(self._stream)
-            result = self._spotter.get_result(self._stream)
-            keyword = getattr(result, "keyword", result)
+            keyword = self._current_keyword()
             if keyword:
-                self._spotter.reset_stream(self._stream)
+                self.reset()
                 return str(keyword)
         return None
 
+    def _current_keyword(self) -> str:
+        result = self._spotter.get_result(self._stream)
+        return str(getattr(result, "keyword", result) or "")
+
     def reset(self) -> None:
-        self._spotter.reset_stream(self._stream)
+        self._stream = self._spotter.create_stream()
 
 
 class SpeechCapture:

@@ -69,6 +69,7 @@ class NormalizationTests(unittest.TestCase):
     def test_drink_query_forms(self):
         cases = {
             "What's in a Mai Tai?": "mai tai",
+            "Whats a Zombie?": "zombie",
             "How do I make a Zombie?": "zombie",
             "Recipe for Painkiller": "painkiller",
             "Describe Planter's Punch": "planter's punch",

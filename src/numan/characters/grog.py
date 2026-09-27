@@ -41,7 +41,7 @@ GROG_DISPATCH_POLICY = CharacterDispatchPolicy(
         RoutinePolicy(
             "make_me",
             _pattern(r"make me (?:(?:a|an) )?(?P<thing>.+)$"),
-            response_template="Pooooof! You are a {thing}",
+            response_template="A flash of rum-soaked magic, and now you're a {thing}.",
         ),
         RoutinePolicy(
             "parrot_taunt",
