@@ -21,7 +21,7 @@ class OllamaProviderTests(unittest.IsolatedAsyncioTestCase):
         self.provider = OllamaLLMProvider(
             OllamaConfig("http://127.0.0.1:11434/api", "llama3.2:3b")
         )
-        self.character = Character("nigel", "Nigel", "Be terse.", "voice")
+        self.character = Character("grog", "Captain Grog", "Be terse.", "voice")
 
     async def test_chat_uses_native_non_streaming_api_and_history(self):
         captured = {}
@@ -34,7 +34,7 @@ class OllamaProviderTests(unittest.IsolatedAsyncioTestCase):
         history = (ConversationTurn(TurnRole.USER, "Earlier", None),)
         with patch("urllib.request.urlopen", side_effect=urlopen):
             result = await self.provider.complete(
-                Utterance("Now?", "nigel", "one"), self.character, history
+                Utterance("Now?", "grog", "one"), self.character, history
             )
 
         self.assertEqual(result, "Quite.")

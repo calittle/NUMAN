@@ -31,7 +31,7 @@ class DrinkPresentationTests(unittest.IsolatedAsyncioTestCase):
         presentation, intent = self.catalog.match("I want a Jet Pilot", "polly")
         self.assertEqual((presentation.drink_id, intent), ("jet_pilot", "ordering"))
         presentation, intent = self.catalog.match(
-            "I'm serving a Suffering Bastard", "nigel"
+            "I'm serving a Suffering Bastard", "grog"
         )
         self.assertEqual(
             (presentation.drink_id, intent), ("suffering_bastard", "serving")
@@ -60,9 +60,9 @@ class DrinkPresentationTests(unittest.IsolatedAsyncioTestCase):
             load_config(PROJECT_ROOT / "config/numan.toml"), live=False
         )
         result = await application.orchestrator.perform(
-            Utterance("I'm serving a Suffering Bastard", "nigel", "service"),
-            application.characters["nigel"],
-            "nigel-dev",
+            Utterance("I'm serving a Suffering Bastard", "grog", "service"),
+            application.characters["grog"],
+            "grog-dev",
         )
 
         cue = result.scheduled_actions[0]

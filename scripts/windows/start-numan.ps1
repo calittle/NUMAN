@@ -7,6 +7,6 @@ if (-not (Test-Path ".venv\Scripts\numan.exe")) {
     exit 1
 }
 
-Write-Host "Starting NUMAN. Say 'Hey Nigel' or 'Hey Polly'." -ForegroundColor Green
+Write-Host "Starting NUMAN. Say 'Hey Captain Grog' or 'Hey Polly'." -ForegroundColor Green
 Write-Host "Keep this window open. Press Ctrl-C once to stop." -ForegroundColor Yellow
 & .\.venv\Scripts\numan.exe wake run --live

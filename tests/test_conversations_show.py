@@ -73,14 +73,14 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
 
 
 class ShowControlTests(unittest.IsolatedAsyncioTestCase):
-    async def test_configured_nigel_routine_triggers_semantic_storm(self):
+    async def test_configured_grog_routine_triggers_semantic_storm(self):
         application = build_application(
             load_config(PROJECT_ROOT / "config/numan.toml"), live=False
         )
         result = await application.orchestrator.perform(
-            Utterance("Bring on a storm", "nigel", "show-test"),
-            application.characters["nigel"],
-            "nigel-dev",
+            Utterance("Bring on a storm", "grog", "show-test"),
+            application.characters["grog"],
+            "grog-dev",
         )
         self.assertEqual(result.plan.show_actions, ("storm",))
         self.assertEqual(

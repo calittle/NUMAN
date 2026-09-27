@@ -23,7 +23,7 @@ class RecordingLLM:
 
 class MultiCharacterTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        self.nigel = Character("nigel", "Nigel", "Dry.", "nigel-voice")
+        self.grog = Character("grog", "Captain Grog", "Dry.", "grog-voice")
         self.polly = Character("polly", "Polly", "Bright.", "polly-voice")
         self.llm = RecordingLLM()
         conversations = InMemoryConversationStore()
@@ -39,16 +39,16 @@ class MultiCharacterTests(unittest.IsolatedAsyncioTestCase):
             )
 
         routing = CharacterDispatcher({
-            "nigel": dispatcher("nigel", "Nigel's private answer."),
+            "grog": dispatcher("grog", "Captain Grog's private answer."),
             "polly": dispatcher("polly", "Polly's private answer."),
         })
         self.voice = FakeVoiceProvider()
-        self.nigel_audio = FakeAudioBackend()
+        self.grog_audio = FakeAudioBackend()
         self.polly_audio = FakeAudioBackend()
         actors = ActorRegistry([
             SquawkerActor(
-                "nigel-dev", "nigel",
-                QueuedAudioOutput("nigel-route", self.nigel_audio),
+                "grog-dev", "grog",
+                QueuedAudioOutput("grog-route", self.grog_audio),
             ),
             SquawkerActor(
                 "polly-dev", "polly",
@@ -60,10 +60,10 @@ class MultiCharacterTests(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_cache_voice_actor_and_route_are_character_specific(self):
-        nigel = await self.orchestrator.perform(
-            Utterance("Private phrase", "nigel", "shared"),
-            self.nigel,
-            "nigel-dev",
+        grog = await self.orchestrator.perform(
+            Utterance("Private phrase", "grog", "shared"),
+            self.grog,
+            "grog-dev",
         )
         polly = await self.orchestrator.perform(
             Utterance("Private phrase", "polly", "shared"),
@@ -71,20 +71,20 @@ class MultiCharacterTests(unittest.IsolatedAsyncioTestCase):
             "polly-dev",
         )
 
-        self.assertEqual(nigel.plan.text, "Nigel's private answer.")
+        self.assertEqual(grog.plan.text, "Captain Grog's private answer.")
         self.assertEqual(polly.plan.text, "Polly's private answer.")
         self.assertEqual(self.voice.calls, [
-            ("Nigel's private answer.", "nigel-voice"),
+            ("Captain Grog's private answer.", "grog-voice"),
             ("Polly's private answer.", "polly-voice"),
         ])
-        self.assertEqual(self.nigel_audio.plays[0][1], "nigel-route")
+        self.assertEqual(self.grog_audio.plays[0][1], "grog-route")
         self.assertEqual(self.polly_audio.plays[0][1], "polly-route")
 
     async def test_same_conversation_id_does_not_share_history(self):
         await self.orchestrator.perform(
-            Utterance("Nigel question", "nigel", "shared"),
-            self.nigel,
-            "nigel-dev",
+            Utterance("Captain Grog question", "grog", "shared"),
+            self.grog,
+            "grog-dev",
         )
         await self.orchestrator.perform(
             Utterance("Polly question", "polly", "shared"),
@@ -92,7 +92,7 @@ class MultiCharacterTests(unittest.IsolatedAsyncioTestCase):
             "polly-dev",
         )
 
-        self.assertEqual(self.llm.calls[0], ("nigel", ("Nigel question",)))
+        self.assertEqual(self.llm.calls[0], ("grog", ("Captain Grog question",)))
         self.assertEqual(self.llm.calls[1], ("polly", ("Polly question",)))
 
 

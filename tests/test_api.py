@@ -18,12 +18,12 @@ class ApiTests(unittest.IsolatedAsyncioTestCase):
             (await self.client.get("/health")).json(),
             {"status": "ok", "live": False, "audio_backend": "fake"},
         )
-        self.assertEqual((await self.client.get("/characters")).json()[0]["id"], "nigel")
-        self.assertEqual((await self.client.get("/actors")).json()[0]["id"], "nigel-dev")
+        self.assertEqual((await self.client.get("/characters")).json()[0]["id"], "grog")
+        self.assertEqual((await self.client.get("/actors")).json()[0]["id"], "grog-dev")
         show = (await self.client.get("/show")).json()
         self.assertEqual(show["provider"], "fake")
         self.assertTrue(show["hardware_safe"])
-        self.assertIn("storm", show["characters"]["nigel"])
+        self.assertIn("storm", show["characters"]["grog"])
 
     async def test_safe_ask_endpoint(self):
         response = await self.client.post("/ask", json={

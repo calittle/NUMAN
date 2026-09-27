@@ -1,17 +1,17 @@
 """Small fixtures shared by character-independent unit tests."""
 
 from numan.characters.dispatch import build_character_dispatcher
-from numan.characters.nigel import NIGEL_DISPATCH_POLICY
+from numan.characters.grog import GROG_DISPATCH_POLICY
 from numan.engine.models import Character
 
 
-TEST_NIGEL = Character(
-    id="nigel",
-    name="Nigel",
+TEST_GROG = Character(
+    id="grog",
+    name="Captain Grog",
     system_prompt="Test prompt.",
-    voice_profile="nigel-edge-ryan-shrill",
+    voice_profile="grog-edge-ryan-shrill",
 )
 
 
-def build_nigel_test_dispatcher(**kwargs):
-    return build_character_dispatcher(policy=NIGEL_DISPATCH_POLICY, **kwargs)
+def build_grog_test_dispatcher(**kwargs):
+    return build_character_dispatcher(policy=GROG_DISPATCH_POLICY, **kwargs)

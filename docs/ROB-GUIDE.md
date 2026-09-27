@@ -3,7 +3,7 @@
 This is the everyday guide for the Windows show computer. You do not need to
 understand Python, AI models, or audio programming to operate NUMAN.
 
-Keep drinks away from the laptop. Nigel can survive rum. Windows cannot.
+Keep drinks away from the laptop. Captain Grog can survive rum. Windows cannot.
 
 ## The three things to remember
 
@@ -59,7 +59,7 @@ In the `scripts\windows` folder, double-click `START-NUMAN.cmd`.
 Leave that window open. When it says it is listening, try:
 
 ```text
-Hey Nigel
+Hey Captain Grog
 Tell me a tiki fact
 ```
 
@@ -94,10 +94,10 @@ work.
 
 Open a terminal in the NUMAN folder before using these commands.
 
-### Test Nigel without the microphone
+### Test Captain Grog without the microphone
 
 ```powershell
-.\.venv\Scripts\numan.exe ask --character nigel --live "Hello"
+.\.venv\Scripts\numan.exe ask --character grog --live "Hello"
 ```
 
 ### Test Polly without the microphone
@@ -132,7 +132,7 @@ Press Enter to begin recording, speak, and press Enter again.
 .\.venv\Scripts\numan.exe wake listen
 ```
 
-Say “Hey Nigel” and “Hey Polly.” Press Ctrl-C once when finished.
+Say “Hey Captain Grog” and “Hey Polly.” Press Ctrl-C once when finished.
 
 ## Configuration
 
@@ -183,7 +183,7 @@ Restore the backup if the result sounds worse.
 
 ### Changing wake phrases
 
-Wake phrases appear under `[wake.targets.nigel]` and
+Wake phrases appear under `[wake.targets.grog]` and
 `[wake.targets.polly]`. After changing one, run:
 
 ```powershell
@@ -208,7 +208,7 @@ exist. Rob should not change network, unit, or circuit numbers casually.
 Make sure the terminal is open in the NUMAN folder and that the command starts
 with `.\.venv\Scripts\`. If the entire `.venv` folder is missing, rerun setup.
 
-### Nigel or Polly does not hear the wake phrase
+### Captain Grog or Polly does not hear the wake phrase
 
 1. Double-click `CHECK-NUMAN.cmd`.
 2. Confirm the intended microphone is connected.

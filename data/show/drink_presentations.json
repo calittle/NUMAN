@@ -6,7 +6,7 @@
     "serving_delay_seconds": 0,
     "cooldown_seconds": 30,
     "responses": {
-      "nigel": [
+      "grog": [
         "A Jet Pilot? Very well. Your flight departs when the bartender finds the runway.",
         "One Jet Pilot. Keep your tray table up and your expectations low."
       ],
@@ -23,7 +23,7 @@
     "serving_delay_seconds": 0,
     "cooldown_seconds": 30,
     "responses": {
-      "nigel": [
+      "grog": [
         "A fitting name. Stand back and let the poor devil suffer properly.",
         "One Suffering Bastard. At last, a drink with honest advertising."
       ],

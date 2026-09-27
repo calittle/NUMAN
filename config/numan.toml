@@ -1,6 +1,6 @@
 [runtime]
-default_character = "nigel"
-default_actor = "nigel-dev"
+default_character = "grog"
+default_actor = "grog-dev"
 
 [llm]
 provider = "ollama"
@@ -15,7 +15,7 @@ command = "whisper-cli"
 endpoint = "https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true"
 api_key_env = "DEEPGRAM_API_KEY"
 language = "en"
-prompt = "Nigel, Polly, Mai Tai, Zombie, Painkiller, Jungle Bird, Navy Grog, Planter's Punch, orgeat, falernum, curaçao, demerara rum, tiki cocktails."
+prompt = "Captain Grog, Polly, Mai Tai, Zombie, Painkiller, Jungle Bird, Navy Grog, Planter's Punch, orgeat, falernum, curaçao, demerara rum, tiki cocktails."
 
 [microphone]
 device = "system-default"
@@ -45,20 +45,20 @@ model_dir = "models/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01"
 threshold = 0.20
 score = 1.0
 
-[wake.targets.nigel]
-phrases = ["hey nigel"]
-character = "nigel"
-actor = "nigel-dev"
+[wake.targets.grog]
+phrases = ["hey captain grog"]
+character = "grog"
+actor = "grog-dev"
 
 [wake.targets.polly]
 phrases = ["hey polly"]
 character = "polly"
 actor = "polly-dev"
 
-[characters.nigel]
-name = "Nigel"
-system_prompt = "You are Nigel, a snarky, grizzled old British pirate parrot who tends a tiki bar. Your exterior is gruff and your insults are sharp, barbed, and often pun-laden, but underneath you are loyal and soft-hearted. Never become cruel. Answer in one or two short sentences. Never write stage directions, role labels, sound effects, or asterisks; output only words Nigel should speak aloud. Never invent cocktail ingredients or recipes. If a drink name is unclear or you do not know its established recipe, ask the guest to repeat the name or admit that you do not know."
-voice_profile = "nigel-edge-ryan-shrill"
+[characters.grog]
+name = "Captain Grog"
+system_prompt = "You are Captain Grog, a snarky, grizzled old British pirate parrot who tends a tiki bar. Your exterior is gruff and your insults are sharp, barbed, and often pun-laden, but underneath you are loyal and soft-hearted. Never become cruel. Answer in one or two short sentences. Never write stage directions, role labels, sound effects, or asterisks; output only words Captain Grog should speak aloud. Never invent cocktail ingredients or recipes. If a drink name is unclear or you do not know its established recipe, ask the guest to repeat the name or admit that you do not know."
+voice_profile = "grog-edge-ryan-shrill"
 show_actions = ["storm", "lightning", "volcano_rumble", "blackout", "present_jet_pilot", "present_suffering_bastard"]
 
 [characters.polly]
@@ -67,14 +67,14 @@ system_prompt = "You are Polly, a brightly enthusiastic tiki-bar parrot whose re
 voice_profile = "polly-edge-jenny-bright"
 show_actions = ["storm", "lightning", "present_jet_pilot", "present_suffering_bastard"]
 
-[voices.nigel-edge-ryan-shrill]
+[voices.grog-edge-ryan-shrill]
 provider = "edge-tts"
 voice = "en-GB-RyanNeural"
 sample_rate = 24000
 channels = 1
 
-# Nigel's tiki voice console. These values reproduce his current sound.
-[voices.nigel-edge-ryan-shrill.tiki_console]
+# Captain Grog's tiki voice console. These values reproduce his current sound.
+[voices.grog-edge-ryan-shrill.tiki_console]
 # Raise/lower the voice in semitones without changing speaking speed. Range: -12..12.
 perch_pitch_semitones = 4
 # The main nasal beak tone. Hz chooses its location; dB controls its strength.
@@ -115,9 +115,9 @@ device = "system-default"
 backend = "system-default"
 device = "system-default"
 
-[actors.nigel-dev]
+[actors.grog-dev]
 type = "squawker"
-character = "nigel"
+character = "grog"
 audio_route = "development-default"
 
 [actors.polly-dev]

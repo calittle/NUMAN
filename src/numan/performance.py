@@ -36,19 +36,19 @@ class StallingPlan:
             raise ValueError("invalid filler delay range")
 
 
-_NIGEL_AUDIO = Path(__file__).resolve().parents[2] / "data/nigel/audio"
+_GROG_AUDIO = Path(__file__).resolve().parents[2] / "data/grog/audio"
 
 
-NIGEL_STALLING_PLAN = StallingPlan(
+GROG_STALLING_PLAN = StallingPlan(
     openers=(
-        StallingCue("Let me think...", _NIGEL_AUDIO / "let-me-think.wav"),
-        StallingCue("One moment...", _NIGEL_AUDIO / "one-moment.wav"),
-        StallingCue("Let's see...", _NIGEL_AUDIO / "lets-see.wav"),
-        StallingCue("Now then...", _NIGEL_AUDIO / "now-then.wav"),
-        StallingCue("Give me a second...", _NIGEL_AUDIO / "give-me-a-second.wav"),
-        StallingCue("Interesting...", _NIGEL_AUDIO / "interesting.wav"),
-        StallingCue("Hang on...", _NIGEL_AUDIO / "hang-on.wav"),
-        StallingCue("Right, let me think...", _NIGEL_AUDIO / "right-let-me-think.wav"),
+        StallingCue("Let me think...", _GROG_AUDIO / "let-me-think.wav"),
+        StallingCue("One moment...", _GROG_AUDIO / "one-moment.wav"),
+        StallingCue("Let's see...", _GROG_AUDIO / "lets-see.wav"),
+        StallingCue("Now then...", _GROG_AUDIO / "now-then.wav"),
+        StallingCue("Give me a second...", _GROG_AUDIO / "give-me-a-second.wav"),
+        StallingCue("Interesting...", _GROG_AUDIO / "interesting.wav"),
+        StallingCue("Hang on...", _GROG_AUDIO / "hang-on.wav"),
+        StallingCue("Right, let me think...", _GROG_AUDIO / "right-let-me-think.wav"),
     ),
     fillers=(
         "I am consulting the coconut telegraph.",

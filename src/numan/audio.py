@@ -35,7 +35,7 @@ class AudioOutput(Protocol):
 
 
 class QueuedAudioOutput:
-    """Serialize one physical route and support Nigel-style stop/drain."""
+    """Serialize one physical route and support orderly stop/drain."""
 
     def __init__(self, route_id: str, backend: AudioBackend) -> None:
         if not route_id.strip():

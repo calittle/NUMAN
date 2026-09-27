@@ -1,4 +1,4 @@
-"""Nigel-compatible text normalization and drink-query extraction."""
+"""Text normalization and drink-query extraction."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ _DRINK_ALIASES = {
     "my tie": "mai tai",
 }
 
-# Ordered like the sed expressions in Nigel's check_drink_cache/check_drink_db.
+# Preserve the established cache and drink-query precedence.
 _DRINK_PATTERNS = tuple(
     re.compile(pattern, re.IGNORECASE)
     for pattern in (
@@ -38,17 +38,17 @@ def collapse_spaces(text: str) -> str:
 
 
 def stable_text(text: str) -> str:
-    """Nigel's cache key: lowercase ASCII letters/digits/spaces only."""
+    """Build a stable cache key using lowercase ASCII letters/digits/spaces."""
     return collapse_spaces(_NON_STABLE_RE.sub("", text.casefold()))
 
 
 def routine_text(text: str) -> str:
-    """Nigel routine normalization: lowercase and remove ? . ! only."""
+    """Normalize routine input by lowercasing and removing ? . ! only."""
     return collapse_spaces(_ROUTINE_PUNCT_RE.sub("", text.casefold()))
 
 
 def extract_drink_query(text: str) -> str | None:
-    """Extract the drink phrase using Nigel's ordered trigger forms."""
+    """Extract a drink phrase using the supported ordered trigger forms."""
     for pattern in _DRINK_PATTERNS:
         match = pattern.fullmatch(text.strip())
         if match:

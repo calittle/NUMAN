@@ -20,13 +20,13 @@ class CharacterContentTests(unittest.IsolatedAsyncioTestCase):
             character: JsonResponsePools(
                 PROJECT_ROOT / f"data/{character}/response_pools.json"
             )
-            for character in ("nigel", "polly")
+            for character in ("grog", "polly")
         }
         for repository in repositories.values():
             for pool in required:
                 self.assertGreaterEqual(len(repository.entries(pool)), 6)
         self.assertTrue(
-            set(repositories["nigel"].entries("_parrot_taunts")).isdisjoint(
+            set(repositories["grog"].entries("_parrot_taunts")).isdisjoint(
                 repositories["polly"].entries("_parrot_taunts")
             )
         )
@@ -36,7 +36,7 @@ class CharacterContentTests(unittest.IsolatedAsyncioTestCase):
             load_config(PROJECT_ROOT / "config/numan.toml"), live=False
         )
         results = {}
-        for character_id in ("nigel", "polly"):
+        for character_id in ("grog", "polly"):
             character = application.characters[character_id]
             results[character_id] = await application.orchestrator.perform(
                 Utterance("Are you a parrot?", character_id, "taunt-test"),
@@ -44,11 +44,11 @@ class CharacterContentTests(unittest.IsolatedAsyncioTestCase):
                 f"{character_id}-dev",
             )
 
-        self.assertEqual(results["nigel"].plan.source, ResponseSource.ROUTINE)
+        self.assertEqual(results["grog"].plan.source, ResponseSource.ROUTINE)
         self.assertEqual(results["polly"].plan.source, ResponseSource.ROUTINE)
-        self.assertEqual(results["nigel"].plan.metadata["routine"], "parrot_taunt")
+        self.assertEqual(results["grog"].plan.metadata["routine"], "parrot_taunt")
         self.assertEqual(results["polly"].plan.metadata["routine"], "parrot_taunt")
-        self.assertNotEqual(results["nigel"].plan.text, results["polly"].plan.text)
+        self.assertNotEqual(results["grog"].plan.text, results["polly"].plan.text)
 
 
 if __name__ == "__main__":

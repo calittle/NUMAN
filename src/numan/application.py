@@ -10,7 +10,7 @@ from pathlib import Path
 from .actors import ActorRegistry, SquawkerActor
 from .audio import QueuedAudioOutput, SoundDeviceBackend, SystemAudioBackend
 from .characters.dispatch import CharacterDispatcher, build_character_dispatcher
-from .characters.nigel import NIGEL_DISPATCH_POLICY
+from .characters.grog import GROG_DISPATCH_POLICY
 from .characters.polly import POLLY_DISPATCH_POLICY
 from .configuration import ConfigurationError, NumanConfig
 from .devices import list_audio_outputs
@@ -24,7 +24,7 @@ from .engine.providers import (
 )
 from .engine.repositories import JsonExactCache, JsonResponsePools
 from .orchestration import Orchestrator
-from .performance import NIGEL_STALLING_PLAN
+from .performance import GROG_STALLING_PLAN
 from .recipes import JsonCocktailProvider
 from .show_control import (
     DrinkPresentationCatalog,
@@ -85,7 +85,7 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
     else:
         llm_provider = FakeLLMProvider("This is the development LLM fallback.")
     policies = {
-        "nigel": NIGEL_DISPATCH_POLICY,
+        "grog": GROG_DISPATCH_POLICY,
         "polly": POLLY_DISPATCH_POLICY,
     }
     unsupported = set(characters) - set(policies)
@@ -196,7 +196,7 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
             actors,
             conversations=conversations,
             show_scheduler=show_scheduler,
-            stalling={"nigel": NIGEL_STALLING_PLAN},
+            stalling={"grog": GROG_STALLING_PLAN},
         ),
     )
 

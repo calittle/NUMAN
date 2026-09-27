@@ -32,11 +32,11 @@ class WakeRegistryTests(unittest.TestCase):
                 self.assertEqual(sherpa_cli_path(), command)
 
     def test_resolves_phrase_to_character_and_actor(self):
-        nigel = WakeTarget("nigel", ("Hey Nigel",), "nigel", "bird-one")
+        grog = WakeTarget("grog", ("Hey Captain Grog",), "grog", "bird-one")
         captain = WakeTarget("captain", ("Hey Captain", "Captain"), "captain", "bird-two")
-        registry = WakeRegistry((nigel, captain))
+        registry = WakeRegistry((grog, captain))
         self.assertEqual(registry.resolve("  HEY   captain "), captain)
-        self.assertEqual(normalize_phrase(" Hey  Nigel "), "hey nigel")
+        self.assertEqual(normalize_phrase(" Hey  Captain Grog "), "hey captain grog")
 
     def test_unknown_detection_is_rejected(self):
         registry = WakeRegistry((WakeTarget("n", ("hey n",), "n", "bird"),))
@@ -51,7 +51,7 @@ class WakeRegistryTests(unittest.TestCase):
             ))
 
     def test_listener_routes_detection_and_stops_cleanly(self):
-        target = WakeTarget("nigel", ("hey nigel",), "nigel", "bird")
+        target = WakeTarget("grog", ("hey captain grog",), "grog", "bird")
         registry = WakeRegistry((target,))
 
         class Detector:
@@ -60,7 +60,7 @@ class WakeRegistryTests(unittest.TestCase):
 
             def process(self, frame):
                 self.calls += 1
-                return "hey nigel" if self.calls == 1 else None
+                return "hey captain grog" if self.calls == 1 else None
 
             def reset(self):
                 pass
@@ -120,9 +120,9 @@ class WakeConfigurationTests(unittest.TestCase):
     def test_checked_in_target_builds(self):
         config = load_config(PROJECT_ROOT / "config/numan.toml")
         registry = build_wake_registry(config)
-        nigel = registry.resolve("hey nigel")
+        grog = registry.resolve("hey captain grog")
         polly = registry.resolve("hey polly")
-        self.assertEqual((nigel.character_id, nigel.actor_id), ("nigel", "nigel-dev"))
+        self.assertEqual((grog.character_id, grog.actor_id), ("grog", "grog-dev"))
         self.assertEqual((polly.character_id, polly.actor_id), ("polly", "polly-dev"))
 
     def test_duplicate_configured_phrase_fails_validation(self):
@@ -130,9 +130,9 @@ class WakeConfigurationTests(unittest.TestCase):
         source += """
 
 [wake.targets.other]
-phrases = ["HEY NIGEL"]
-character = "nigel"
-actor = "nigel-dev"
+phrases = ["HEY CAPTAIN GROG"]
+character = "grog"
+actor = "grog-dev"
 """
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "duplicate.toml"

@@ -1,10 +1,10 @@
 # NUMAN
 
-NUMAN is an evolving multi-character AI show-control engine based on the
-proven interaction patterns in Nigel.
+NUMAN is an evolving multi-character AI show-control engine for interactive
+themed entertainment.
 
 The current implementation is a platform-neutral, typed, fast-first dispatcher.
-It includes Nigel-compatible normalization and routine precedence, JSON-backed
+It includes stable text normalization and routine precedence, JSON-backed
 exact caches and response pools, structured-data and LLM provider boundaries,
 and rule-level timing diagnostics. It has no audio, hardware, network, or
 operating-system dependencies in its core.
@@ -55,7 +55,7 @@ python3 -m venv .venv
 Run a hardware-safe interaction:
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m numan ask --character nigel "Hello"
+PYTHONPATH=src .venv/bin/python -m numan ask --character grog "Hello"
 ```
 
 After installing the project, `PYTHONPATH` is unnecessary:
@@ -111,7 +111,7 @@ numan llm status
 ## Characters and actors
 
 The checked-in development installation has two independently routed
-characters: Nigel (`nigel-dev`) and Polly (`polly-dev`). They have distinct
+characters: Captain Grog (`grog-dev`) and Polly (`polly-dev`). They have distinct
 prompts, voice profiles, response caches, pools, wake targets, conversation
 history, and logical audio routes. Both development routes currently use the
 system-default device; assign each route a `sounddevice` selector when the
@@ -133,7 +133,7 @@ character owns how it responds through its prompt and character data.
 Each configured voice can use a commented `[voices.<id>.tiki_console]` table
 instead of maintaining a raw ffmpeg expression. Its controls include perch
 pitch, beak bite, feather sparkle, coconut-radio crunch, and rum-barrel
-loudness. The checked-in values reproduce the current Nigel and Polly sounds;
+loudness. The checked-in values reproduce the current Captain Grog and Polly sounds;
 edit a value and use `numan ask --character <id> --live "Hello"` to audition
 it. Configuration validation rejects unsafe ranges. Advanced profiles may omit
 `tiki_console` and provide `ffmpeg_filter` directly as an escape hatch, but a
@@ -144,12 +144,12 @@ profile cannot use both.
 NUMAN can request named environmental effects without containing their
 choreography. The initial hardware-safe provider records `storm`, `lightning`,
 `volcano_rumble`, and `blackout`; it never talks to real lighting hardware.
-Character allowlists provide a second authorization boundary: Nigel may
+Character allowlists provide a second authorization boundary: Captain Grog may
 request all four actions, while Polly currently has only storm and lightning.
 
 ```bash
 numan show status
-numan ask --character nigel "Bring on a storm"
+numan ask --character grog "Bring on a storm"
 numan ask --character polly "Give me lightning"
 ```
 
@@ -222,7 +222,7 @@ The `fake` and `openai-compatible` providers remain available for tests and
 alternate deployments.
 
 When dispatch reaches the Ollama fallback, NUMAN immediately chooses one of
-eight pre-rendered Nigel openers while model inference and answer synthesis run
+eight pre-rendered Captain Grog openers while model inference and answer synthesis run
 concurrently. It avoids playing the same opener twice in a row within a running
 process. Routine, exact-cache, pool, and structured responses do not stall. CLI
 and API results expose `stall_played` for diagnosis.
@@ -241,7 +241,7 @@ numan transcribe path/to/recording.wav
 ```
 
 Use interactive push-to-talk, transcribe locally, and send the result through
-Nigel's normal response pipeline. Press Enter once to start and again to stop:
+Captain Grog's normal response pipeline. Press Enter once to start and again to stop:
 
 ```bash
 numan listen --live
@@ -258,10 +258,10 @@ prerecorded-audio adapter with `DEEPGRAM_API_KEY`.
 Wake phrases are configured per target and compiled for sherpa-onnx at runtime:
 
 ```toml
-[wake.targets.nigel]
-phrases = ["hey nigel"]
-character = "nigel"
-actor = "nigel-dev"
+[wake.targets.grog]
+phrases = ["hey captain grog"]
+character = "grog"
+actor = "grog-dev"
 
 [wake.targets.polly]
 phrases = ["hey polly"]
@@ -297,13 +297,10 @@ is generated and played so the actor cannot wake itself.
 Recipe questions pass through a local structured catalog before Ollama. The
 initial catalog contains sourced specifications for Mai Tai, Jungle Bird,
 Zombie, Planter's Punch, and Painkiller. Unknown drinks remain clean provider
-misses; Nigel's prompt forbids inventing a recipe on the fallback path.
+misses; Captain Grog's prompt forbids inventing a recipe on the fallback path.
 
 Records live in `data/cocktails/recipes.json`, while spoken formatting and
 alias resolution live in `numan.recipes`. The initial specifications use the
 International Bartenders Association list and Pusser's published Painkiller
 formula. This provider can later be replaced or augmented by Kapu Tracker
 without changing dispatch or orchestration.
-
-The Nigel snapshot in `../nigel` is a behavioral reference. NUMAN code lives
-only in this repository.

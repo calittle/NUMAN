@@ -74,7 +74,7 @@ class ActorTests(unittest.IsolatedAsyncioTestCase):
     async def test_actor_uses_assigned_route(self):
         backend = FakeAudioBackend()
         actor = SquawkerActor(
-            "bird-left", "nigel", QueuedAudioOutput("output-left", backend)
+            "bird-left", "grog", QueuedAudioOutput("output-left", backend)
         )
         result = await actor.speak(AudioAsset(Path("speech.wav")))
         self.assertEqual(result.route_id, "output-left")
@@ -85,14 +85,14 @@ class ActorTests(unittest.IsolatedAsyncioTestCase):
             path = Path(directory) / "speech.wav"
             path.write_bytes(b"wav")
             actor = SquawkerActor(
-                "bird", "nigel", QueuedAudioOutput("route", FakeAudioBackend())
+                "bird", "grog", QueuedAudioOutput("route", FakeAudioBackend())
             )
             await actor.speak(AudioAsset(path, owned=True))
             self.assertFalse(path.exists())
 
     def test_registry_rejects_duplicate_actor_ids(self):
         output = QueuedAudioOutput("route", FakeAudioBackend())
-        actor = SquawkerActor("bird", "nigel", output)
+        actor = SquawkerActor("bird", "grog", output)
         with self.assertRaises(ValueError):
             ActorRegistry([actor, actor])
 

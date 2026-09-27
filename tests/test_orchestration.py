@@ -10,11 +10,11 @@ from numan.engine.repositories import MappingExactCache, MappingResponsePools
 from numan.orchestration import Orchestrator
 from numan.performance import StallingCue, StallingPlan
 from numan.testing import FakeAudioBackend, FakeVoiceProvider
-from tests.support import TEST_NIGEL, build_nigel_test_dispatcher
+from tests.support import TEST_GROG, build_grog_test_dispatcher
 
 
-def make_orchestrator(actor_character="nigel"):
-    dispatcher = build_nigel_test_dispatcher(
+def make_orchestrator(actor_character="grog"):
+    dispatcher = build_grog_test_dispatcher(
         exact_cache=MappingExactCache({"mai tai": "Mai Tai recipe"}),
         response_pools=MappingResponsePools({"_greetings": ["Hello there."]}),
         structured_data=NullStructuredDataProvider(),
@@ -33,9 +33,9 @@ class OrchestrationTests(unittest.IsolatedAsyncioTestCase):
     async def test_dispatch_synthesis_and_actor_route(self):
         orchestrator, voice, backend = make_orchestrator()
         result = await orchestrator.perform(
-            Utterance("Hello", "nigel", "conversation-7"), TEST_NIGEL, "bird-one"
+            Utterance("Hello", "grog", "conversation-7"), TEST_GROG, "bird-one"
         )
-        self.assertEqual(voice.calls, [("Hello there.", TEST_NIGEL.voice_profile)])
+        self.assertEqual(voice.calls, [("Hello there.", TEST_GROG.voice_profile)])
         self.assertEqual(backend.plays[0][1], "speaker-one")
         self.assertEqual(result.actor_id, "bird-one")
         self.assertEqual(result.route_id, "speaker-one")
@@ -44,7 +44,7 @@ class OrchestrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result.stall_played)
 
     async def test_cached_stall_opener_plays_only_for_llm_fallback(self):
-        dispatcher = build_nigel_test_dispatcher(
+        dispatcher = build_grog_test_dispatcher(
             exact_cache=MappingExactCache({}),
             response_pools=MappingResponsePools({"_greetings": ["Hello there."]}),
             structured_data=NullStructuredDataProvider(),
@@ -54,7 +54,7 @@ class OrchestrationTests(unittest.IsolatedAsyncioTestCase):
         voice = FakeVoiceProvider()
         backend = FakeAudioBackend()
         actor = SquawkerActor(
-            "bird-one", "nigel", QueuedAudioOutput("speaker-one", backend)
+            "bird-one", "grog", QueuedAudioOutput("speaker-one", backend)
         )
         with tempfile.TemporaryDirectory() as directory:
             opener = Path(directory) / "opener.wav"
@@ -64,8 +64,8 @@ class OrchestrationTests(unittest.IsolatedAsyncioTestCase):
                 dispatcher, voice, ActorRegistry([actor]), stalling=plan
             )
             result = await orchestrator.perform(
-                Utterance("An uncached question", "nigel", "conversation-7"),
-                TEST_NIGEL,
+                Utterance("An uncached question", "grog", "conversation-7"),
+                TEST_GROG,
                 "bird-one",
             )
 
@@ -78,13 +78,13 @@ class OrchestrationTests(unittest.IsolatedAsyncioTestCase):
     async def test_stall_opener_is_not_used_for_fast_response(self):
         orchestrator, _, backend = make_orchestrator()
         result = await orchestrator.perform(
-            Utterance("Hello", "nigel", "conversation-7"), TEST_NIGEL, "bird-one"
+            Utterance("Hello", "grog", "conversation-7"), TEST_GROG, "bird-one"
         )
         self.assertFalse(result.stall_played)
         self.assertEqual(len(backend.plays), 1)
 
     async def test_stall_opener_does_not_repeat_when_alternatives_exist(self):
-        dispatcher = build_nigel_test_dispatcher(
+        dispatcher = build_grog_test_dispatcher(
             exact_cache=MappingExactCache({}),
             response_pools=MappingResponsePools({}),
             structured_data=NullStructuredDataProvider(),
@@ -92,7 +92,7 @@ class OrchestrationTests(unittest.IsolatedAsyncioTestCase):
         )
         backend = FakeAudioBackend()
         registered = SquawkerActor(
-            "bird-one", "nigel", QueuedAudioOutput("speaker-one", backend)
+            "bird-one", "grog", QueuedAudioOutput("speaker-one", backend)
         )
         with tempfile.TemporaryDirectory() as directory:
             first = Path(directory) / "first.wav"
@@ -108,10 +108,10 @@ class OrchestrationTests(unittest.IsolatedAsyncioTestCase):
                 dispatcher, FakeVoiceProvider(), ActorRegistry([registered]), stalling=plan
             )
             await orchestrator.perform(
-                Utterance("Question one", "nigel", "one"), TEST_NIGEL, "bird-one"
+                Utterance("Question one", "grog", "one"), TEST_GROG, "bird-one"
             )
             await orchestrator.perform(
-                Utterance("Question two", "nigel", "two"), TEST_NIGEL, "bird-one"
+                Utterance("Question two", "grog", "two"), TEST_GROG, "bird-one"
             )
 
         self.assertNotEqual(backend.plays[0][0], backend.plays[2][0])
@@ -120,7 +120,7 @@ class OrchestrationTests(unittest.IsolatedAsyncioTestCase):
         orchestrator, voice, _ = make_orchestrator("another-character")
         with self.assertRaises(ValueError):
             await orchestrator.perform(
-                Utterance("Hello", "nigel", "conversation-7"), TEST_NIGEL, "bird-one"
+                Utterance("Hello", "grog", "conversation-7"), TEST_GROG, "bird-one"
             )
         self.assertEqual(voice.calls, [])
 
@@ -128,7 +128,7 @@ class OrchestrationTests(unittest.IsolatedAsyncioTestCase):
         orchestrator, _, _ = make_orchestrator()
         with self.assertRaisesRegex(LookupError, "missing"):
             await orchestrator.perform(
-                Utterance("Hello", "nigel", "conversation-7"), TEST_NIGEL, "missing"
+                Utterance("Hello", "grog", "conversation-7"), TEST_GROG, "missing"
             )
 
 

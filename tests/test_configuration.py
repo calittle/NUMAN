@@ -10,12 +10,12 @@ class ConfigurationTests(unittest.TestCase):
     def test_project_configuration_is_valid_and_composable(self):
         config = load_config(PROJECT_ROOT / "config/numan.toml")
         application = build_application(config, live=False)
-        self.assertEqual(config.default_character, "nigel")
-        self.assertEqual(application.actors.get("nigel-dev").character_id, "nigel")
-        self.assertEqual(set(application.characters), {"nigel", "polly"})
+        self.assertEqual(config.default_character, "grog")
+        self.assertEqual(application.actors.get("grog-dev").character_id, "grog")
+        self.assertEqual(set(application.characters), {"grog", "polly"})
         self.assertEqual(application.actors.get("polly-dev").character_id, "polly")
         self.assertEqual(
-            config.voices["nigel-edge-ryan-shrill"].tiki_console.coconut_radio_bits,
+            config.voices["grog-edge-ryan-shrill"].tiki_console.coconut_radio_bits,
             6,
         )
 

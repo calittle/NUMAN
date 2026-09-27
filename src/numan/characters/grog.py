@@ -1,4 +1,4 @@
-"""Nigel's fast-first dispatch policy; identity lives in configuration."""
+"""Captain Grog's fast-first dispatch policy."""
 
 import re
 
@@ -9,11 +9,10 @@ def _pattern(value: str) -> re.Pattern[str]:
     return re.compile(value, re.IGNORECASE)
 
 
-# Order matches Nigel's routine precedence. Hardware-only introduction and
-# impersonation routines are deferred until actors exist; these entries cover
-# the text-producing rules that belong in the engine.
-NIGEL_DISPATCH_POLICY = CharacterDispatchPolicy(
-    character_id="nigel",
+# Hardware-only introduction and impersonation routines are deferred until
+# actors exist; these entries cover text-producing rules owned by the engine.
+GROG_DISPATCH_POLICY = CharacterDispatchPolicy(
+    character_id="grog",
     routines=(
         RoutinePolicy(
             "show_blackout",

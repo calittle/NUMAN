@@ -27,7 +27,7 @@ class _Response(io.BytesIO):
 class DeepgramProviderTests(unittest.IsolatedAsyncioTestCase):
     async def test_transcribes_wav_and_uses_token_auth(self):
         payload = {
-            "results": {"channels": [{"alternatives": [{"transcript": "Hello Nigel"}]}]}
+            "results": {"channels": [{"alternatives": [{"transcript": "Hello Captain Grog"}]}]}
         }
         captured = {}
 
@@ -48,7 +48,7 @@ class DeepgramProviderTests(unittest.IsolatedAsyncioTestCase):
             ):
                 text = await provider.transcribe(audio)
 
-        self.assertEqual(text, "Hello Nigel")
+        self.assertEqual(text, "Hello Captain Grog")
         self.assertEqual(captured["authorization"], "Token secret")
         self.assertEqual(captured["content_type"], "audio/wav")
         self.assertEqual(captured["body"], b"RIFF-test")
