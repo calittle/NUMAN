@@ -131,13 +131,16 @@ if (-not $SkipModels) {
     $WakeName = "sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01"
     $WakeFolder = Join-Path "models" $WakeName
     if (-not (Test-Path (Join-Path $WakeFolder "tokens.txt"))) {
-        if (-not (Get-Command tar -ErrorAction SilentlyContinue)) {
-            throw "Windows tar is missing. Install current Windows updates, restart, and rerun setup."
-        }
         $WakeArchive = Join-Path $env:TEMP "$WakeName.tar.bz2"
         Download-WithRetry "https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/$WakeName.tar.bz2" $WakeArchive "the wake-word model"
-        & tar -xf $WakeArchive -C models
-        if ($LASTEXITCODE -ne 0) { throw "Could not unpack the wake-word model." }
+        Remove-Item $WakeFolder -Recurse -Force -ErrorAction SilentlyContinue
+        # Windows' bundled tar.exe cannot always launch a bzip2 decompressor.
+        # Python's standard tarfile module handles this archive without an
+        # additional system utility, and Python is already required by NUMAN.
+        & .\.venv\Scripts\python.exe -m tarfile -e $WakeArchive models
+        if (($LASTEXITCODE -ne 0) -or (-not (Test-Path (Join-Path $WakeFolder "tokens.txt")))) {
+            throw "Could not unpack the wake-word model. Rerun SETUP-NUMAN.cmd to retry."
+        }
         Remove-Item $WakeArchive -Force -ErrorAction SilentlyContinue
     } else {
         Write-Host "Wake-word model is already present."

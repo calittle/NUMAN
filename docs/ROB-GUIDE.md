@@ -67,6 +67,9 @@ The whisper.cpp project sometimes publishes a stable release without Windows
 binaries. Setup automatically selects the newest official release or nightly
 build that includes its normal 64-bit Windows package.
 
+The wake-word model is unpacked by Python itself. NUMAN does not depend on the
+optional `bzip2` program that some versions of Windows `tar.exe` expect.
+
 If Windows asks whether FFmpeg or Ollama may be installed, approve it. If the
 script says to restart Windows, restart and run the same setup command again.
 
