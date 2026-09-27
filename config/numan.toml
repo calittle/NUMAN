@@ -27,7 +27,7 @@ channels = 1
 [show_control]
 provider = "fake"
 allowed_actions = ["storm", "lightning", "volcano_rumble", "blackout", "present_jet_pilot", "present_suffering_bastard"]
-# For an Advanced LOR installation, change provider to "lor-osc-trigger", set
+# For a Pro-licensed LOR installation, change provider to "lor-osc-trigger", set
 # the OSC port configured in the S6 Control Panel, and add one trigger table per
 # allowed action. Safe mode still records actions without sending UDP packets.
 host = "127.0.0.1"

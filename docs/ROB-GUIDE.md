@@ -316,7 +316,7 @@ Then restart NUMAN.
 
 ## Light-O-Rama
 
-Leave `provider = "fake"` until Light-O-Rama S6, its Advanced license,
+Leave `provider = "fake"` until Light-O-Rama S6, its Pro license,
 interactive groups, and sequences are installed. Fake mode is safe: NUMAN
 reports cues but sends nothing to lighting hardware.
 

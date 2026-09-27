@@ -79,7 +79,7 @@ class OSCUDPTransport:
 
 
 class LightORamaOSCTriggerProvider:
-    """Map semantic actions to Advanced-license LOR interactive triggers."""
+    """Map semantic actions to Pro-licensed LOR OSC interactive triggers."""
 
     def __init__(
         self,

@@ -211,15 +211,15 @@ the persistent API or wake runtime for delayed cues; exiting or restarting the
 process intentionally discards pending work. Persistence can be added later if
 show cues must survive a restart.
 
-### Light-O-Rama Advanced integration
+### Light-O-Rama OSC integration
 
 The production adapter targets the OSC interactive-trigger feature available
-with an Advanced or Pro LOR license. It sends LOR's documented
+with a Pro LOR license (S6.2.4+). Advanced supports interactive shows, but the OSC interface requires Pro. It sends LOR's documented
 `/trigger network unit circuit` message over UDP, normally to the S6 Control
 Panel on the same Windows computer. LOR owns the interactive group and every
 sequence within it; NUMAN only maps a semantic action to its virtual trigger.
 
-Keep `provider = "fake"` until S6 is installed. Then enable OSC reception in
+Keep `provider = "fake"` until S6 with Pro licensing is installed and a harmless test mapping has been verified. Then enable OSC reception in
 the Control Panel, choose its UDP port, configure an interactive trigger for
 each sequence, and change the provider:
 
@@ -249,7 +249,7 @@ execution, so operational confirmation will ultimately come from LOR's player
 log or a separate health/telemetry mechanism.
 
 References: [LOR OSC messages](https://www1.lightorama.com/downloads/6.3.2/help/osc-messages.htm)
-and [LOR license feature comparison](https://www1.lightorama.com/help/feature_comparison.htm).
+and [LOR license feature comparison](https://store.lightorama.com/pages/software-license-features).
 
 The `fake` and `openai-compatible` providers remain available for tests and
 alternate deployments.
