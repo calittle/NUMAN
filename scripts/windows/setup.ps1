@@ -23,9 +23,43 @@ function Install-WingetApp($CommandName, $PackageId, $FriendlyName) {
     if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         throw "Windows Package Manager (winget) is missing. Install 'App Installer' from the Microsoft Store, then rerun this script."
     }
+    $Installed = (& winget list --exact --id $PackageId --disable-interactivity 2>&1) | Out-String
+    if ($Installed -match [regex]::Escape($PackageId)) {
+        Write-Host "$FriendlyName is already installed. Its command should become available after setup refreshes PATH or Windows restarts."
+        return
+    }
     Step "Installing $FriendlyName"
     & winget install --exact --id $PackageId --accept-package-agreements --accept-source-agreements
-    if ($LASTEXITCODE -ne 0) { throw "$FriendlyName installation failed." }
+    if ($LASTEXITCODE -ne 0) {
+        $Installed = (& winget list --exact --id $PackageId --disable-interactivity 2>&1) | Out-String
+        if ($Installed -notmatch [regex]::Escape($PackageId)) {
+            throw "$FriendlyName installation failed."
+        }
+        Write-Host "$FriendlyName is installed; continuing despite winget's nonzero result."
+    }
+}
+
+function Download-WithRetry($Uri, $OutFile, $FriendlyName, $MinimumBytes = 1) {
+    $Partial = "$OutFile.partial"
+    Remove-Item $Partial -Force -ErrorAction SilentlyContinue
+    for ($Attempt = 1; $Attempt -le 3; $Attempt++) {
+        try {
+            Write-Host "Downloading $FriendlyName (attempt $Attempt of 3)..."
+            Invoke-WebRequest -UseBasicParsing -Uri $Uri -OutFile $Partial
+            if ((Get-Item $Partial).Length -lt $MinimumBytes) {
+                throw "The downloaded file was unexpectedly small."
+            }
+            Move-Item $Partial $OutFile -Force
+            return
+        } catch {
+            Remove-Item $Partial -Force -ErrorAction SilentlyContinue
+            if ($Attempt -eq 3) {
+                throw "Could not download $FriendlyName after 3 attempts. Check the internet connection and rerun SETUP-NUMAN.cmd. $($_.Exception.Message)"
+            }
+            Write-Warning "Could not download $FriendlyName. Retrying shortly. $($_.Exception.Message)"
+            Start-Sleep -Seconds (3 * $Attempt)
+        }
+    }
 }
 
 Step "Checking Python"
@@ -53,8 +87,10 @@ if ($LASTEXITCODE -ne 0) { throw "NUMAN's Python packages could not be installed
 if (-not $SkipModels) {
     Step "Downloading the speech-recognition model"
     New-Item -ItemType Directory -Force -Path models | Out-Null
-    if (-not (Test-Path "models\ggml-base.en.bin")) {
-        Invoke-WebRequest -Uri "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin" -OutFile "models\ggml-base.en.bin"
+    $WhisperModel = "models\ggml-base.en.bin"
+    if ((-not (Test-Path $WhisperModel)) -or ((Get-Item $WhisperModel).Length -lt 100MB)) {
+        Remove-Item $WhisperModel -Force -ErrorAction SilentlyContinue
+        Download-WithRetry "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin" $WhisperModel "the Whisper speech model" 100MB
     } else {
         Write-Host "Whisper model is already present."
     }
@@ -68,7 +104,7 @@ if (-not $SkipModels) {
         if (-not $Asset) { throw "The official whisper.cpp release did not contain the normal 64-bit Windows package. See docs/ROB-GUIDE.md." }
         $Archive = Join-Path $env:TEMP "numan-whisper.zip"
         $Extracted = Join-Path $env:TEMP "numan-whisper"
-        Invoke-WebRequest -Uri $Asset.browser_download_url -OutFile $Archive
+        Download-WithRetry $Asset.browser_download_url $Archive "whisper.cpp for Windows"
         Remove-Item $Extracted -Recurse -Force -ErrorAction SilentlyContinue
         Expand-Archive $Archive -DestinationPath $Extracted -Force
         $Executable = Get-ChildItem $Extracted -Recurse -Filter "whisper-cli.exe" | Select-Object -First 1
@@ -89,7 +125,7 @@ if (-not $SkipModels) {
             throw "Windows tar is missing. Install current Windows updates, restart, and rerun setup."
         }
         $WakeArchive = Join-Path $env:TEMP "$WakeName.tar.bz2"
-        Invoke-WebRequest -Uri "https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/$WakeName.tar.bz2" -OutFile $WakeArchive
+        Download-WithRetry "https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/$WakeName.tar.bz2" $WakeArchive "the wake-word model"
         & tar -xf $WakeArchive -C models
         if ($LASTEXITCODE -ne 0) { throw "Could not unpack the wake-word model." }
         Remove-Item $WakeArchive -Force -ErrorAction SilentlyContinue

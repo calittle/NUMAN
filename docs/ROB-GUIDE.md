@@ -58,6 +58,11 @@ The script installs NUMAN's private Python environment and downloads the
 speech, wake-word, and local-language models. It may take several minutes and
 download more than a gigabyte. Existing files are reused if setup is run again.
 
+Setup is safe to rerun after a failed download. It retries each large download
+three times, skips applications Winget has already installed, and does not
+treat "already installed; no upgrade available" as an error. Incomplete model
+downloads are kept separate and never mistaken for finished models.
+
 If Windows asks whether FFmpeg or Ollama may be installed, approve it. If the
 script says to restart Windows, restart and run the same setup command again.
 
