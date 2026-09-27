@@ -70,7 +70,19 @@ build that includes its normal 64-bit Windows package.
 The wake-word model is unpacked by Python itself. NUMAN does not depend on the
 optional `bzip2` program that some versions of Windows `tar.exe` expect.
 
-If Windows asks whether FFmpeg or Ollama may be installed, approve it. If the
+The wake-word libraries also need Microsoft's Visual C++ v14 Redistributable.
+Setup checks for this runtime and installs the version matching NUMAN's Python
+if it is missing. You do not need Visual Studio or any developer tools.
+
+If setup reports `DLL load failed while importing _sentencepiece`, use the
+latest NUMAN setup script and rerun `SETUP-NUMAN.cmd`. It installs the missing
+runtime and reuses the downloaded models. If the runtime is already installed
+but the error persists, repair it using the
+[official Microsoft installer](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist),
+restart Windows, and rerun setup.
+
+If Windows asks whether FFmpeg, Ollama, or the Visual C++ runtime may be
+installed, approve it. If the
 script says to restart Windows, restart and run the same setup command again.
 
 Successful setup ends with:
@@ -79,9 +91,90 @@ Successful setup ends with:
 Everything needed for normal operation is ready.
 ```
 
+## Unattended startup with a dedicated account
+
+Use this optional setup for a dedicated show computer. Windows automatically
+signs into the standard `NumanShow` account; Task Scheduler starts NUMAN and
+Ollama in that account's audio session. This is automatic login, not a Windows
+service. The show computer must remain powered on and connected to the internet
+for Edge TTS.
+
+1. Run `SETUP-NUMAN.cmd` in the installation account (`calit` on this computer).
+   After the normal readiness checks pass, answer **Y** to the unattended-startup
+   question. If normal setup is already complete, run `ENABLE-UNATTENDED.cmd`
+   instead; it performs the same complete startup setup.
+2. Setup prepares the shared Python, packages, Ollama, model files, and FFmpeg in
+   `C:\ProgramData\NUMAN`. It downloads Microsoft Autologon and verifies its
+   Microsoft signature. No manual download or runtime-copy commands are needed.
+   It does not copy personal Ollama keys. Stop an existing unattended instance
+   before rerunning setup so its runtime can be refreshed safely.
+3. Approve the administrator prompt. For a new `NumanShow` account, choose a
+   password in the local credential dialog. Setup creates a standard user with
+   a nonexpiring password, registers `NUMAN-Show`, and disables plugged-in sleep.
+   If Light-O-Rama is installed, it also registers `NUMAN-Light-O-Rama`.
+4. If automatic login is not already configured, Microsoft Autologon opens.
+   Enter **NumanShow**, this computer's name in **Domain**, and the password from
+   step 3, then click **Enable**. Use the password, not a Windows Hello PIN.
+   Existing automatic-login credentials are preserved on repeat setup.
+   Enter credentials locally, never in chat or a script. Autologon stores a
+   Windows LSA secret; administrators can retrieve it.
+5. Stop the foreground NUMAN session, then sign into `NumanShow` once. Finish
+   Windows first-login screens. Check microphone permission, microphone/speaker
+   selection, and Light-O-Rama licensing and show folders in this account.
+   NUMAN's triggers remain fake until OSC and mappings are configured.
+6. Restart at a convenient time and verify that Windows signs in automatically
+   and both birds answer. Setup never signs out or reboots the computer for you;
+   this live test confirms the complete startup path.
+
+For scripted installation, pass `-ConfigureUnattended` to `setup.ps1`; plain
+`setup.ps1` remains noninteractive unless `-Interactive` is supplied. The account
+password and Autologon steps still require local interaction. To omit LOR when
+using the standalone startup setup, run `ENABLE-UNATTENDED.cmd -SkipLightORama`.
+Run it again after installing LOR to add its startup task.
+
+### Where to find the startup tasks
+
+These are **Scheduled Tasks**, not entries in Windows Services. From `calit`,
+open **Task Scheduler as administrator**. Click the **Task Scheduler Library
+text** directly beneath **Task Scheduler (Local)** in the left pane. Clicking
+only the expand arrow or the top-level summary does not show the task list.
+The center pane lists **NUMAN-Show** and, when installed, **NUMAN-Light-O-Rama**.
+Press **F5** to refresh. They are in the root library, not under Microsoft.
+
+You can inspect tasks from the administrator account, but they run only in
+`NumanShow`'s interactive session. Before that account signs in, **Ready** is
+normal. After the 30-second startup delay, expect **Running** for NUMAN. If
+necessary, check the task's **Last Run Result** and the log files below.
+
+The tasks wait 30 seconds after sign-in. NUMAN's supervisor waits for Ollama,
+restarts NUMAN 15 seconds after an exit, and logs to `C:\ProgramData\NUMAN\logs`.
+Task Scheduler restarts a failed supervisor after one minute. Light-O-Rama opens
+its Control Panel separately; no shows or hardware triggers are enabled by setup.
+Do not also enable Light-O-Rama's own **Launch at Startup** checkbox when using
+its scheduled task.
+
+In the show account, use `START-UNATTENDED.cmd`, `STOP-UNATTENDED.cmd`, and
+`CHECK-UNATTENDED.cmd` in `scripts\windows`. Do not run `START-NUMAN.cmd` alongside
+the task, or two listeners may compete for the microphone. Check `supervisor.log`
+and the newest `numan-*.log` when troubleshooting. Logs contain recognized
+questions and responses; review and clear old logs as needed.
+
+After updating dependencies, stop the task and rerun `prepare-unattended.ps1`
+from the installation account to refresh the shared environment. It refuses to
+refresh while its Python or Ollama processes are active. If an Ollama process
+remains after stopping, close that process before refreshing. Source/configuration
+changes in this checkout are shared immediately; restart the task to load them.
+
+To undo unattended startup, disable the two `NUMAN-*` tasks in Task Scheduler and
+click **Disable** in Microsoft Autologon. Restore plugged-in sleep in Windows
+power settings if desired. Disabling tasks does not stop a currently running
+instance; use `STOP-UNATTENDED.cmd` as well.
+
 ## Starting NUMAN
 
-In the `scripts\windows` folder, double-click `START-NUMAN.cmd`.
+For a foreground installation, double-click `START-NUMAN.cmd` in
+`scripts\windows`. For unattended installations, use the startup tasks and
+`START-UNATTENDED.cmd` described above instead.
 
 Leave that window open. When it says it is listening, try:
 
@@ -245,6 +338,14 @@ with `.\.venv\Scripts\`. If the entire `.venv` folder is missing, rerun setup.
 4. Run `wake listen` and test in a quiet room.
 
 ### The bird hears words but does not speak
+
+The wake phrase alone does not produce a spoken reply. After the `WAKE` line,
+say your question within five seconds, then pause. After about a second of
+silence, the bird plays a short acknowledgment while preparing the answer. A
+`Heard (grog): ...` or `Heard (polly): ...` line confirms that the question was
+captured and transcribed. If only `WAKE` appears, check microphone input volume
+and move closer: wake detection and question capture use different checks, so
+a quiet microphone can detect the wake phrase but miss the question.
 
 1. Confirm the Squawker audio cable and power.
 2. Test the character directly with `numan.exe ask ... --live`.

@@ -1,3 +1,4 @@
+import asyncio
 import unittest
 import tempfile
 from pathlib import Path
@@ -115,6 +116,97 @@ class OrchestrationTests(unittest.IsolatedAsyncioTestCase):
             )
 
         self.assertNotEqual(backend.plays[0][0], backend.plays[2][0])
+
+    async def test_audio_opener_covers_transcription_without_second_llm_opener(self):
+        started = asyncio.Event()
+        release = asyncio.Event()
+        transcribed = asyncio.Event()
+        opener = Path(__file__).parents[1] / "data/grog/audio/let-me-think.wav"
+
+        class BlockingBackend(FakeAudioBackend):
+            async def play(self, path, route_id):
+                await super().play(path, route_id)
+                if path == opener:
+                    started.set()
+                    await release.wait()
+
+        orchestrator, _, _ = make_orchestrator()
+        backend = BlockingBackend()
+        orchestrator._actors = ActorRegistry([SquawkerActor(
+            "bird-one", "grog", QueuedAudioOutput("speaker-one", backend)
+        )])
+        orchestrator._stalling = StallingPlan(
+            (StallingCue("Thinking", opener),), (), "Ready"
+        )
+
+        async def transcribe(audio):
+            await asyncio.wait_for(started.wait(), 1)
+            transcribed.set()
+            return "An uncached question"
+
+        task = asyncio.create_task(orchestrator.perform_audio(
+            Path("question.wav"), transcribe, TEST_GROG, "bird-one", "voice"
+        ))
+        try:
+            await asyncio.wait_for(transcribed.wait(), 1)
+            await asyncio.sleep(0)
+            self.assertFalse(task.done())
+            self.assertEqual([p for p, _ in backend.plays], [opener])
+        finally:
+            release.set()
+        result = await asyncio.wait_for(task, 1)
+        self.assertTrue(result.stall_played)
+        self.assertEqual([p for p, _ in backend.plays], [opener, Path("memory-1.wav")])
+
+    async def test_transcription_failure_cancels_active_opener(self):
+        started = asyncio.Event()
+        stopped = asyncio.Event()
+
+        class BlockingBackend(FakeAudioBackend):
+            async def play(self, path, route_id):
+                started.set()
+                try:
+                    await asyncio.Event().wait()
+                finally:
+                    stopped.set()
+
+        orchestrator, voice, _ = make_orchestrator()
+        orchestrator._actors = ActorRegistry([SquawkerActor(
+            "bird-one", "grog", QueuedAudioOutput("speaker-one", BlockingBackend())
+        )])
+        from numan.performance import GROG_STALLING_PLAN
+        orchestrator._stalling = GROG_STALLING_PLAN
+
+        async def transcribe(audio):
+            await asyncio.wait_for(started.wait(), 1)
+            raise RuntimeError("transcription failed")
+
+        with self.assertRaisesRegex(RuntimeError, "transcription failed"):
+            await orchestrator.perform_audio(
+                Path("question.wav"), transcribe, TEST_GROG, "bird-one", "voice"
+            )
+        self.assertTrue(stopped.is_set())
+        self.assertEqual(voice.calls, [])
+
+    async def test_polly_has_playable_cached_openers_in_application(self):
+        import wave
+        from numan.application import PROJECT_ROOT, build_application
+        from numan.configuration import load_config
+        from numan.performance import POLLY_STALLING_PLAN
+        app = build_application(load_config(PROJECT_ROOT / "config/numan.toml"), live=False)
+        for cue in POLLY_STALLING_PLAN.openers:
+            with wave.open(str(cue.audio_asset)) as wav:
+                self.assertGreater(wav.getnframes(), 0)
+                self.assertEqual(wav.getsampwidth(), 2)
+
+        async def transcribe(audio):
+            return "Hello"
+
+        result = await app.orchestrator.perform_audio(
+            Path("question.wav"), transcribe, app.characters["polly"], "polly-dev", "voice"
+        )
+        self.assertTrue(result.stall_played)
+        self.assertEqual(result.actor_id, "polly-dev")
 
     async def test_wrong_character_actor_is_rejected_before_synthesis(self):
         orchestrator, voice, _ = make_orchestrator("another-character")

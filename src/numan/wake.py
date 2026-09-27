@@ -180,7 +180,7 @@ class SpeechCapture:
         *,
         sample_rate: int = 16_000,
         frame_samples: int = 512,
-        speech_threshold: float = 450.0,
+        speech_threshold: float = 100.0,
         start_timeout_s: float = 5.0,
         end_silence_s: float = 1.1,
         max_duration_s: float = 15.0,

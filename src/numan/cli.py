@@ -280,17 +280,17 @@ async def _wake(args) -> int:
         loop = asyncio.get_running_loop()
 
         async def answer(target, audio):
-            transcript = await stt_provider.transcribe(audio)
-            print(f"Heard ({target.id}): {transcript}", flush=True)
             character = application.characters[target.character_id]
-            result = await application.orchestrator.perform(
-                Utterance(
-                    transcript,
-                    target.character_id,
-                    f"wake-{target.id}",
-                ),
-                character,
-                target.actor_id,
+            transcript = ""
+
+            def report_transcript(text):
+                nonlocal transcript
+                transcript = text
+                print(f"Heard ({target.id}): {text}", flush=True)
+
+            result = await application.orchestrator.perform_audio(
+                audio, stt_provider.transcribe, character, target.actor_id,
+                f"wake-{target.id}", on_transcript=report_transcript,
             )
             print(json.dumps({
                 "wake_target": target.id,

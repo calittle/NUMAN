@@ -56,3 +56,16 @@ GROG_STALLING_PLAN = StallingPlan(
     ),
     transition="Here we go!",
 )
+
+
+_POLLY_AUDIO = Path(__file__).resolve().parents[2] / "data/polly/audio"
+POLLY_STALLING_PLAN = StallingPlan(
+    openers=(
+        StallingCue("Let me think, darling.", _POLLY_AUDIO / "let-me-think.wav"),
+        StallingCue("One moment, love.", _POLLY_AUDIO / "one-moment.wav"),
+        StallingCue("Now, let's see.", _POLLY_AUDIO / "lets-see.wav"),
+        StallingCue("Give me a second.", _POLLY_AUDIO / "give-me-a-second.wav"),
+    ),
+    fillers=(),
+    transition="Here we are!",
+)

@@ -152,6 +152,17 @@ class SpeechCaptureTests(unittest.TestCase):
         self.assertIsNotNone(result)
         self.assertGreater(len(result), len(speech) * 2)
 
+    def test_default_capture_accepts_quiet_speech_above_background(self):
+        capture = SpeechCapture(end_silence_s=0.064)
+        background = np.full(512, 8, dtype=np.int16).tobytes()
+        quiet_speech = np.full(512, 225, dtype=np.int16).tobytes()
+        self.assertIsNone(capture.feed(background))
+        self.assertFalse(capture.speech_started)
+        self.assertIsNone(capture.feed(quiet_speech))
+        self.assertTrue(capture.speech_started)
+        self.assertIsNone(capture.feed(background))
+        self.assertIsNotNone(capture.feed(background))
+
     def test_expires_when_no_question_follows_wake(self):
         capture = SpeechCapture(start_timeout_s=0.064)
         silence = np.zeros(512, dtype=np.int16).tobytes()

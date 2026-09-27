@@ -28,6 +28,22 @@ The one-time installer and double-clickable start/check launchers are in
 and refreshes its environment. Run `numan doctor` at any time for a
 plain-language readiness report.
 
+Windows wake-word support also requires the
+[Microsoft Visual C++ v14 Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist)
+for the Python interpreter's architecture (x64 on the standard show computer).
+`SETUP-NUMAN.cmd` checks the runtime DLLs and downloads and installs the runtime
+from Microsoft if they are missing, then verifies that SentencePiece and
+Sherpa ONNX import successfully before downloading models. Approve the Windows
+installation prompt; if a restart is requested, restart and rerun setup.
+`-SkipWindowsApps` skips this installation and stops with instructions if the
+runtime is missing.
+
+`SETUP-NUMAN.cmd` offers unattended startup after its readiness checks pass.
+`ENABLE-UNATTENDED.cmd` runs the same complete startup setup on an existing installation.
+This uses a dedicated standard Windows account with
+Microsoft Autologon and interactive scheduled tasks for NUMAN/Ollama and the
+Light-O-Rama Control Panel. See the [unattended setup instructions](docs/ROB-GUIDE.md#unattended-startup-with-a-dedicated-account).
+
 ## Platform support
 
 NUMAN keeps its configuration, show logic, speech pipeline, and tests
@@ -238,11 +254,17 @@ and [LOR license feature comparison](https://www1.lightorama.com/help/feature_co
 The `fake` and `openai-compatible` providers remain available for tests and
 alternate deployments.
 
-When dispatch reaches the Ollama fallback, NUMAN immediately chooses one of
-eight pre-rendered Captain Grog openers while model inference and answer synthesis run
-concurrently. It avoids playing the same opener twice in a row within a running
-process. Routine, exact-cache, pool, and structured responses do not stall. CLI
-and API results expose `stall_played` for diagnosis.
+In wake mode, Captain Grog and Polly play a cached acknowledgment as soon as
+question capture finishes, while transcription, dispatch, and answer synthesis
+run. The answer waits for the acknowledgment to finish, and Ollama does not
+trigger a second opener for that question. Grog has eight pre-rendered openers;
+Polly has four in her own voice. Consecutive openers do not repeat when
+alternatives exist. No online synthesis is needed for these clips.
+
+For text-based CLI/API questions, openers still play only for Ollama fallback.
+Results expose `stall_played` for diagnosis. The initial 1.1-second end-of-speech
+pause remains; acknowledgment starts after it so it does not talk over the guest.
+Repeated fillers during long waits are not scheduled.
 
 ## Voice input
 

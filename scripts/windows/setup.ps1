@@ -1,6 +1,8 @@
 param(
     [switch]$SkipWindowsApps,
-    [switch]$SkipModels
+    [switch]$SkipModels,
+    [switch]$Interactive,
+    [switch]$ConfigureUnattended
 )
 
 $ErrorActionPreference = "Stop"
@@ -84,6 +86,30 @@ if (-not (Test-Path ".venv\Scripts\python.exe")) {
 & .\.venv\Scripts\python.exe -m pip install -e ".[dev,live,api,wake]"
 if ($LASTEXITCODE -ne 0) { throw "NUMAN's Python packages could not be installed." }
 
+Step "Checking the Microsoft Visual C++ runtime"
+$RuntimeProbe = @"
+import ctypes
+import sys
+try:
+    for name in ('msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll'):
+        ctypes.WinDLL(name)
+except OSError:
+    sys.exit(1)
+"@
+& .\.venv\Scripts\python.exe -c $RuntimeProbe
+if ($LASTEXITCODE -ne 0) {
+    if ($SkipWindowsApps) { throw "The Visual C++ runtime is missing. Rerun setup without -SkipWindowsApps." }
+    $RuntimeArch = (& .\.venv\Scripts\python.exe -c "import platform; print({'AMD64': 'x64', 'ARM64': 'arm64', 'x86': 'x86'}.get(platform.machine(), ''))").Trim()
+    if (-not $RuntimeArch) { throw "Cannot determine the Visual C++ runtime architecture." }
+    $RuntimeInstaller = Join-Path $env:TEMP "numan-vc-redist-$RuntimeArch.exe"
+    Download-WithRetry "https://aka.ms/vc14/vc_redist.$RuntimeArch.exe" $RuntimeInstaller "the Microsoft Visual C++ runtime" 1MB
+    $RuntimeInstall = Start-Process -FilePath $RuntimeInstaller -ArgumentList "/install", "/passive", "/norestart" -WindowStyle Hidden -Wait -PassThru
+    if ($RuntimeInstall.ExitCode -eq 3010) { throw "Restart Windows to finish installing the Visual C++ runtime, then rerun SETUP-NUMAN.cmd." }
+    if ($RuntimeInstall.ExitCode -notin @(0, 1638)) { throw "Visual C++ runtime installation failed (exit $($RuntimeInstall.ExitCode))." }
+}
+& .\.venv\Scripts\python.exe -c "import sentencepiece; import sherpa_onnx"
+if ($LASTEXITCODE -ne 0) { throw "Wake-word libraries could not load. Repair the Microsoft Visual C++ Redistributable, restart Windows, and rerun setup." }
+
 if (-not $SkipModels) {
     Step "Downloading the speech-recognition model"
     New-Item -ItemType Directory -Force -Path models | Out-Null
@@ -160,6 +186,15 @@ if ($LASTEXITCODE -ne 0) { throw "The wake phrases could not be prepared. Read t
 & .\.venv\Scripts\numan.exe doctor
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`nSetup is complete. NUMAN is ready." -ForegroundColor Green
+    $EnableStartup = $ConfigureUnattended
+    if ($Interactive -and -not $EnableStartup) {
+        $Answer = Read-Host "Configure automatic login and unattended startup for a dedicated NumanShow account? (y/N)"
+        $EnableStartup = $Answer -match '^(?i:y|yes)$'
+    }
+    if ($EnableStartup) {
+        Step "Configuring unattended show startup"
+        & (Join-Path $PSScriptRoot "configure-unattended.ps1")
+    }
 } else {
     Write-Warning "Setup finished, but something still needs attention. Follow the FIX line above or see docs\ROB-GUIDE.md."
 }

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import random
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter_ns
@@ -85,11 +85,46 @@ class Orchestrator:
         self._last_stall_assets[character_id] = selected
         return selected
 
+    async def perform_audio(
+        self,
+        audio: Path,
+        transcribe: Callable[[Path], Awaitable[str]],
+        character: Character,
+        actor_id: str,
+        conversation_id: str,
+        on_transcript: Callable[[str], None] | None = None,
+    ) -> PerformanceResult:
+        """Cover transcription with one cached opener, then queue the answer."""
+        actor = self._actors.get(actor_id)
+        if actor.character_id != character.id:
+            raise ValueError(f"actor {actor.id!r} does not represent {character.id!r}")
+        opener = self._stall_asset(character.id)
+        opener_task = (
+            asyncio.create_task(actor.speak(AudioAsset(opener, owned=False)))
+            if opener is not None else None
+        )
+        try:
+            transcript = await transcribe(audio)
+            if on_transcript is not None:
+                on_transcript(transcript)
+            return await self.perform(
+                Utterance(transcript, character.id, conversation_id),
+                character, actor_id, opener_task=opener_task,
+            )
+        finally:
+            if opener_task is not None:
+                if not opener_task.done():
+                    opener_task.cancel()
+                # Retrieve failures and finish cancellation even if transcription fails.
+                await asyncio.gather(opener_task, return_exceptions=True)
+
     async def perform(
         self,
         utterance: Utterance,
         character: Character,
         actor_id: str,
+        *,
+        opener_task: asyncio.Task | None = None,
     ) -> PerformanceResult:
         started = perf_counter_ns()
         actor = self._actors.get(actor_id)
@@ -98,11 +133,11 @@ class Orchestrator:
 
         conversation_key = ConversationKey(character.id, utterance.conversation_id)
         await self._conversations.append(conversation_key, TurnRole.USER, utterance.text)
-        stall_task: asyncio.Task | None = None
+        stall_task: asyncio.Task | None = opener_task
 
         def on_rule_start(rule_name: str) -> None:
             nonlocal stall_task
-            if rule_name == "llm_fallback":
+            if rule_name == "llm_fallback" and stall_task is None:
                 stall_asset = self._stall_asset(character.id)
             else:
                 stall_asset = None

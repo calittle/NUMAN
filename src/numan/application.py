@@ -24,7 +24,7 @@ from .engine.providers import (
 )
 from .engine.repositories import JsonExactCache, JsonResponsePools
 from .orchestration import Orchestrator
-from .performance import GROG_STALLING_PLAN
+from .performance import GROG_STALLING_PLAN, POLLY_STALLING_PLAN
 from .recipes import JsonCocktailProvider
 from .show_control import (
     DrinkPresentationCatalog,
@@ -200,7 +200,7 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
             actors,
             conversations=conversations,
             show_scheduler=show_scheduler,
-            stalling={"grog": GROG_STALLING_PLAN},
+            stalling={"grog": GROG_STALLING_PLAN, "polly": POLLY_STALLING_PLAN},
         ),
     )
 
