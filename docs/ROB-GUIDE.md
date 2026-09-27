@@ -63,6 +63,10 @@ three times, skips applications Winget has already installed, and does not
 treat "already installed; no upgrade available" as an error. Incomplete model
 downloads are kept separate and never mistaken for finished models.
 
+The whisper.cpp project sometimes publishes a stable release without Windows
+binaries. Setup automatically selects the newest official release or nightly
+build that includes its normal 64-bit Windows package.
+
 If Windows asks whether FFmpeg or Ollama may be installed, approve it. If the
 script says to restart Windows, restart and run the same setup command again.
 

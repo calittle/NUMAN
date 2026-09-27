@@ -97,11 +97,21 @@ if (-not $SkipModels) {
 
     Step "Installing the whisper.cpp command"
     if (-not (Test-Path "tools\whisper\whisper-cli.exe")) {
-        $Release = Invoke-RestMethod "https://api.github.com/repos/ggml-org/whisper.cpp/releases/latest"
-        $Asset = $Release.assets | Where-Object {
-            $_.name -match '^whisper-bin-x64\.zip$'
-        } | Select-Object -First 1
-        if (-not $Asset) { throw "The official whisper.cpp release did not contain the normal 64-bit Windows package. See docs/ROB-GUIDE.md." }
+        # Stable whisper.cpp releases do not always publish binary assets. Search
+        # recent official releases (including their official nightly builds) for
+        # the newest normal Windows x64 package instead of assuming /latest has it.
+        $Releases = Invoke-RestMethod "https://api.github.com/repos/ggml-org/whisper.cpp/releases?per_page=20"
+        $Asset = $null
+        foreach ($Release in $Releases) {
+            $Asset = $Release.assets | Where-Object {
+                $_.name -eq "whisper-bin-x64.zip"
+            } | Select-Object -First 1
+            if ($Asset) {
+                Write-Host "Using official whisper.cpp release $($Release.tag_name)."
+                break
+            }
+        }
+        if (-not $Asset) { throw "No recent official whisper.cpp release contained the normal 64-bit Windows package. See docs/ROB-GUIDE.md." }
         $Archive = Join-Path $env:TEMP "numan-whisper.zip"
         $Extracted = Join-Path $env:TEMP "numan-whisper"
         Download-WithRetry $Asset.browser_download_url $Archive "whisper.cpp for Windows"
