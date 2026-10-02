@@ -44,6 +44,44 @@ class OrchestrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertGreaterEqual(result.timings.total_ms, 0)
         self.assertFalse(result.stall_played)
 
+    async def test_streaming_llm_synthesizes_and_plays_complete_sentences(self):
+        class StreamingLLM:
+            async def complete(self, *args):
+                raise AssertionError("streaming path should be selected")
+
+            async def stream(self, *args):
+                for fragment in ("First sentence.", " Second", " sentence."):
+                    await asyncio.sleep(0)
+                    yield fragment
+
+        dispatcher = build_grog_test_dispatcher(
+            exact_cache=MappingExactCache({}),
+            response_pools=MappingResponsePools({}),
+            structured_data=NullStructuredDataProvider(),
+            llm=StreamingLLM(),
+        )
+        voice = FakeVoiceProvider()
+        backend = FakeAudioBackend()
+        actor = SquawkerActor(
+            "bird-one", "grog", QueuedAudioOutput("speaker-one", backend)
+        )
+        orchestrator = Orchestrator(dispatcher, voice, ActorRegistry([actor]))
+
+        result = await orchestrator.perform(
+            Utterance("Uncached", "grog", "stream"), TEST_GROG, "bird-one"
+        )
+
+        self.assertEqual(result.plan.text, "First sentence. Second sentence.")
+        self.assertEqual(
+            voice.calls,
+            [
+                ("First sentence.", TEST_GROG.voice_profile),
+                ("Second sentence.", TEST_GROG.voice_profile),
+            ],
+        )
+        self.assertEqual(len(backend.plays), 2)
+        self.assertGreaterEqual(result.timings.llm_total_ms, 0)
+
     async def test_cached_stall_opener_plays_only_for_llm_fallback(self):
         dispatcher = build_grog_test_dispatcher(
             exact_cache=MappingExactCache({}),
@@ -207,6 +245,9 @@ class OrchestrationTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertTrue(result.stall_played)
         self.assertEqual(result.actor_id, "polly-dev")
+        self.assertGreaterEqual(
+            result.timings.answer_start_ms, result.timings.transcription_ms
+        )
 
     async def test_wrong_character_actor_is_rejected_before_synthesis(self):
         orchestrator, voice, _ = make_orchestrator("another-character")

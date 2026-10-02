@@ -18,10 +18,11 @@ Andy should be present for this part.
 
 ### 1. Install Python
 
-Install **64-bit Python 3.12 or newer** from [python.org](https://www.python.org/downloads/).
+Install **64-bit Python 3.13** from [python.org](https://www.python.org/downloads/).
 On the first installer screen, check **Add Python to PATH**.
 
-NUMAN is tested on Python 3.12 and Python 3.14. Do not install an older version.
+NUMAN requires Python 3.13 so both offline Piper and Kokoro voices are available.
+Python 3.12 and 3.14 are intentionally rejected.
 
 ### 2. Install Git
 
@@ -289,7 +290,11 @@ The microphone setting is:
 ```toml
 [microphone]
 device = "system-default"
+end_silence_ms = 750
 ```
+
+`end_silence_ms` controls how long NUMAN waits after the last detected speech.
+Keep the 750 ms default unless normal pauses are being clipped.
 
 Each bird has an audio route. During initial setup both can use the normal
 Windows speaker. Once dedicated USB audio adapters are connected, Andy will

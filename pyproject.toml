@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Multi-character AI show-control engine"
 readme = "README.md"
 license = "LicenseRef-PolyForm-Noncommercial-1.0.0"
-requires-python = ">=3.12"
+requires-python = ">=3.13,<3.14"
 dependencies = []
 
 [project.scripts]
@@ -20,9 +20,21 @@ dev = [
   "pytest>=8.0",
 ]
 live = [
-  "edge-tts>=7.0",
   "numpy>=2.0",
   "sounddevice>=0.5",
+]
+piper = [
+  "piper-tts>=1.4",
+]
+kokoro = [
+  "kokoro-onnx>=0.6,<0.7",
+]
+local-tts = [
+  "piper-tts>=1.4",
+  "kokoro-onnx>=0.6,<0.7",
+]
+edge-tts = [
+  "edge-tts>=7.0",
 ]
 api = [
   "fastapi>=0.115",

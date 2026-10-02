@@ -19,8 +19,8 @@ default: it uses fake synthesis and a null audio backend.
 
 ## Windows show-computer setup
 
-The supported production target is 64-bit Windows with Python 3.12 or newer.
-Python 3.12 and 3.14 are exercised by the project. For the
+The supported production target is 64-bit Windows or macOS with Python 3.13.
+NUMAN pins Python 3.13 so both local Piper and Kokoro voice engines can run. For the
 nontechnical installation, daily-operation, backup, and troubleshooting
 instructions, use [Rob's NUMAN Guide](docs/ROB-GUIDE.md). For a complete
 operator-facing reference to settings, actors, recipes, response data, and show
@@ -55,13 +55,18 @@ The production installer above is Windows-specific because that is the show
 computer Rob will operate. Development is exercised on macOS. Linux is
 supported by the code but has not yet had a full hardware dress rehearsal.
 
-On macOS or Linux, install Python 3.12 or newer plus FFmpeg, then run:
+On macOS, install Python 3.13 plus FFmpeg, then run:
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -e ".[dev,live,api,wake]"
+python3.13 -m venv .venv
+.venv/bin/python -m pip install -e ".[dev,live,local-tts,api,wake]"
 .venv/bin/numan doctor
 ```
+
+The `local-tts` extra installs both selectable offline engines, Piper and
+Kokoro. Voice models are separate installation assets and must be configured
+under `[voices.*]`; normal synthesis does not download models or contact a
+network service.
 
 Update an existing macOS or Linux checkout with:
 
@@ -264,13 +269,14 @@ Polly has four in her own voice. Consecutive openers do not repeat when
 alternatives exist. No online synthesis is needed for these clips.
 
 For text-based CLI/API questions, openers still play only for Ollama fallback.
-Results expose `stall_played` for diagnosis. The initial 1.1-second end-of-speech
+Results expose `stall_played` for diagnosis. The default 750 ms end-of-speech
 pause remains; acknowledgment starts after it so it does not talk over the guest.
 Repeated fillers during long waits are not scheduled.
 
 ## Voice input
 
-NUMAN uses local whisper.cpp speech recognition by default, with Deepgram
+NUMAN uses a persistent local whisper.cpp server by default, loading the model
+once and keeping captured speech on the machine. Deepgram is
 retained as an optional provider. The checked-in configuration expects the
 English base model at `models/ggml-base.en.bin` (models are intentionally not
 committed). Inspect and test the input pipeline independently:
@@ -332,6 +338,8 @@ the same continuously open microphone stream for detection and query capture,
 ends capture after speech followed by silence, routes the request to the
 target's character and actor, and discards microphone input while the answer
 is generated and played so the actor cannot wake itself.
+The default trailing-silence window is 750 ms and is configurable with
+`microphone.end_silence_ms`.
 
 ## Cocktail knowledge
 

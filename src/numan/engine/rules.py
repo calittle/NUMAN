@@ -29,6 +29,7 @@ def _plan(
     source: ResponseSource,
     *,
     text: str | None = None,
+    text_stream=None,
     audio_asset: str | None = None,
     show_actions: tuple[str, ...] = (),
     metadata: Mapping[str, object] | None = None,
@@ -38,6 +39,7 @@ def _plan(
         conversation_id=utterance.conversation_id,
         source=source,
         text=text,
+        text_stream=text_stream,
         audio_asset=audio_asset,
         show_actions=show_actions,
         metadata=metadata or {},
@@ -201,6 +203,13 @@ class ProviderLLMFallbackRule:
         if self.conversations is not None:
             history = await self.conversations.history(
                 ConversationKey(character.id, utterance.conversation_id)
+            )
+        stream = getattr(self.provider, "stream", None)
+        if stream is not None:
+            return _plan(
+                utterance,
+                ResponseSource.LLM_FALLBACK,
+                text_stream=stream(utterance, character, history),
             )
         text = await self.provider.complete(utterance, character, history)
         return _plan(utterance, ResponseSource.LLM_FALLBACK, text=text)

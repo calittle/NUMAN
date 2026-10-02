@@ -1,11 +1,17 @@
 import asyncio
 import tempfile
 import unittest
+import wave
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from numan.voice import (
+    AudioAsset,
+    CachedVoiceProvider,
     EdgeTTSVoiceProvider,
+    KokoroVoiceProvider,
+    PiperVoiceProvider,
+    RoutingVoiceProvider,
     VoiceProfile,
     VoiceProviderError,
     tiki_console_filter,
@@ -75,6 +81,94 @@ class VoiceProviderTests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaisesRegex(VoiceProviderError, "timed out"):
                 await provider._run("edge-tts")
         process.terminate.assert_called_once()
+
+    async def test_piper_model_is_resident_and_output_is_postprocessed(self):
+        class FakePiper:
+            def synthesize_wav(self, text, wav_file, **kwargs):
+                wav_file.setnchannels(1)
+                wav_file.setsampwidth(2)
+                wav_file.setframerate(22_050)
+                wav_file.writeframes(b"\0\0" * 20)
+
+        loads = []
+        profile = VoiceProfile("grog", "", provider="piper", model=Path("grog.onnx"))
+        provider = PiperVoiceProvider(
+            {"grog": profile},
+            voice_loader=lambda item: loads.append(item.id) or FakePiper(),
+        )
+
+        async def fake_ffmpeg(*args):
+            Path(args[-1]).write_bytes(b"RIFF-local-piper")
+
+        provider._run = AsyncMock(side_effect=fake_ffmpeg)
+        first = await provider.synthesize("Ahoy", "grog")
+        second = await provider.synthesize("Again", "grog")
+        self.assertEqual(loads, ["grog"])
+        self.assertEqual(first.path.read_bytes(), b"RIFF-local-piper")
+        first.path.unlink()
+        second.path.unlink()
+
+    async def test_kokoro_session_is_shared_by_profiles_using_same_bundle(self):
+        import numpy as np
+
+        class FakeKokoro:
+            def create(self, text, **kwargs):
+                return np.zeros(20, dtype=np.float32), 24_000
+
+        loads = []
+        common = {"provider": "kokoro", "model": Path("kokoro.onnx"),
+                  "voices": Path("voices.bin")}
+        profiles = {
+            "grog": VoiceProfile("grog", "am_adam", **common),
+            "polly": VoiceProfile("polly", "af_sarah", **common),
+        }
+        provider = KokoroVoiceProvider(
+            profiles, model_loader=lambda item: loads.append(item.id) or FakeKokoro()
+        )
+
+        async def fake_ffmpeg(*args):
+            Path(args[-1]).write_bytes(b"RIFF-local-kokoro")
+
+        provider._run = AsyncMock(side_effect=fake_ffmpeg)
+        asset = await provider.synthesize("Hello", "polly")
+        self.assertEqual(loads, ["grog"])
+        self.assertEqual(asset.path.read_bytes(), b"RIFF-local-kokoro")
+        asset.path.unlink()
+
+    async def test_routing_provider_selects_profile_engine(self):
+        piper = AsyncMock()
+        piper.synthesize.return_value = AudioAsset(Path("piper.wav"))
+        kokoro = AsyncMock()
+        kokoro.synthesize.return_value = AudioAsset(Path("kokoro.wav"))
+        router = RoutingVoiceProvider(
+            {"piper": piper, "kokoro": kokoro},
+            {"grog": "piper", "polly": "kokoro"},
+        )
+        result = await router.synthesize("Hello", "polly")
+        self.assertEqual(result.path, Path("kokoro.wav"))
+        kokoro.synthesize.assert_awaited_once_with("Hello", "polly")
+
+    async def test_rendered_wav_cache_avoids_repeated_synthesis(self):
+        with tempfile.TemporaryDirectory() as directory:
+            rendered = Path(directory) / "rendered.wav"
+            with wave.open(str(rendered), "wb") as wav_file:
+                wav_file.setnchannels(1)
+                wav_file.setsampwidth(2)
+                wav_file.setframerate(24_000)
+                wav_file.writeframes(b"\0\0" * 20)
+            upstream = AsyncMock()
+            upstream.synthesize.return_value = AudioAsset(rendered, owned=False)
+            profile = VoiceProfile("grog", "am_adam", provider="kokoro")
+            provider = CachedVoiceProvider(
+                upstream, {"grog": profile}, cache_dir=Path(directory) / "cache"
+            )
+
+            first = await provider.synthesize("Same line", "grog")
+            second = await provider.synthesize("Same line", "grog")
+
+            self.assertEqual(first.path, second.path)
+            self.assertFalse(first.owned)
+            self.assertEqual(upstream.synthesize.await_count, 1)
 
 
 if __name__ == "__main__":

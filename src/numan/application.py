@@ -41,8 +41,18 @@ from .transcription import (
     STTProvider,
     WhisperCppConfig,
     WhisperCppSTTProvider,
+    WhisperServerConfig,
+    WhisperServerSTTProvider,
 )
-from .voice import EdgeTTSVoiceProvider, VoiceProfile, tiki_console_filter
+from .voice import (
+    CachedVoiceProvider,
+    EdgeTTSVoiceProvider,
+    KokoroVoiceProvider,
+    PiperVoiceProvider,
+    RoutingVoiceProvider,
+    VoiceProfile,
+    tiki_console_filter,
+)
 from .wake import SherpaWakeConfig, WakeRegistry, WakeTarget
 from .conversations import InMemoryConversationStore
 
@@ -57,6 +67,81 @@ class Application:
     orchestrator: Orchestrator
     show_control: object
     show_scheduler: ShowActionScheduler
+    llm_provider: object
+
+    async def warmup(self) -> None:
+        if not self.config.llm.warm_on_start:
+            return
+        warmup = getattr(self.llm_provider, "warmup", None)
+        if warmup is not None:
+            await warmup()
+
+
+def build_voice_provider(config: NumanConfig):
+    """Build resident local/cloud engines for only the profiles in active use."""
+    active_profile_ids = {character.voice_profile for character in config.characters.values()}
+
+    def model_path(value: str) -> Path | None:
+        if not value:
+            return None
+        path = Path(value)
+        return path if path.is_absolute() else PROJECT_ROOT / path
+
+    profiles = {
+        voice.id: VoiceProfile(
+            id=voice.id, voice=voice.voice, provider=voice.provider,
+            rate=voice.rate, volume=voice.volume, pitch=voice.pitch,
+            ffmpeg_filter=(
+                tiki_console_filter(
+                    sample_rate=voice.sample_rate,
+                    perch_pitch_semitones=voice.tiki_console.perch_pitch_semitones,
+                    barrel_chest_hz=voice.tiki_console.barrel_chest_hz,
+                    barrel_chest_db=voice.tiki_console.barrel_chest_db,
+                    barrel_chest_width=voice.tiki_console.barrel_chest_width,
+                    beak_bite_hz=voice.tiki_console.beak_bite_hz,
+                    beak_bite_db=voice.tiki_console.beak_bite_db,
+                    beak_bite_width=voice.tiki_console.beak_bite_width,
+                    feather_sparkle_hz=voice.tiki_console.feather_sparkle_hz,
+                    feather_sparkle_db=voice.tiki_console.feather_sparkle_db,
+                    coconut_radio_bits=voice.tiki_console.coconut_radio_bits,
+                    rum_barrel_lufs=voice.tiki_console.rum_barrel_lufs,
+                )
+                if voice.tiki_console is not None else voice.ffmpeg_filter
+            ),
+            sample_rate=voice.sample_rate, channels=voice.channels,
+            model=model_path(voice.model),
+            model_config=model_path(voice.model_config),
+            voices=model_path(voice.voices),
+            language=voice.language,
+            speed=voice.speed,
+            speaker=voice.speaker,
+            length_scale=voice.length_scale,
+            noise_scale=voice.noise_scale,
+            noise_w_scale=voice.noise_w_scale,
+        )
+        for voice in config.voices.values()
+        if voice.id in active_profile_ids
+    }
+    providers = {}
+    for provider_name in {profile.provider for profile in profiles.values()}:
+        selected = {
+            key: profile for key, profile in profiles.items()
+            if profile.provider == provider_name
+        }
+        if provider_name == "edge-tts":
+            providers[provider_name] = EdgeTTSVoiceProvider(selected)
+        elif provider_name == "piper":
+            providers[provider_name] = PiperVoiceProvider(selected)
+        elif provider_name == "kokoro":
+            providers[provider_name] = KokoroVoiceProvider(selected)
+        else:
+            raise ConfigurationError(f"unsupported voice provider {provider_name!r}")
+    return CachedVoiceProvider(
+        RoutingVoiceProvider(
+            providers, {key: profile.provider for key, profile in profiles.items()}
+        ),
+        profiles,
+    )
 
 
 def build_application(config: NumanConfig, *, live: bool) -> Application:
@@ -75,6 +160,7 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
         llm_provider = OllamaLLMProvider(OllamaConfig(
             base_url=config.llm.endpoint,
             model=config.llm.model,
+            keep_alive=config.llm.keep_alive,
         ))
     elif config.llm.provider == "openai-compatible":
         llm_provider = OpenAICompatibleLLMProvider(OpenAICompatibleConfig(
@@ -132,35 +218,7 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
         for character_id in characters
     })
 
-    if live:
-        profiles = {
-            voice.id: VoiceProfile(
-                id=voice.id, voice=voice.voice,
-                rate=voice.rate, volume=voice.volume, pitch=voice.pitch,
-                ffmpeg_filter=(
-                    tiki_console_filter(
-                        sample_rate=voice.sample_rate,
-                        perch_pitch_semitones=voice.tiki_console.perch_pitch_semitones,
-                        barrel_chest_hz=voice.tiki_console.barrel_chest_hz,
-                        barrel_chest_db=voice.tiki_console.barrel_chest_db,
-                        barrel_chest_width=voice.tiki_console.barrel_chest_width,
-                        beak_bite_hz=voice.tiki_console.beak_bite_hz,
-                        beak_bite_db=voice.tiki_console.beak_bite_db,
-                        beak_bite_width=voice.tiki_console.beak_bite_width,
-                        feather_sparkle_hz=voice.tiki_console.feather_sparkle_hz,
-                        feather_sparkle_db=voice.tiki_console.feather_sparkle_db,
-                        coconut_radio_bits=voice.tiki_console.coconut_radio_bits,
-                        rum_barrel_lufs=voice.tiki_console.rum_barrel_lufs,
-                    )
-                    if voice.tiki_console is not None else voice.ffmpeg_filter
-                ),
-                sample_rate=voice.sample_rate, channels=voice.channels,
-            )
-            for voice in config.voices.values()
-        }
-        voice_provider = EdgeTTSVoiceProvider(profiles)
-    else:
-        voice_provider = FakeVoiceProvider()
+    voice_provider = build_voice_provider(config) if live else FakeVoiceProvider()
 
     outputs = {}
     for route in config.audio_routes.values():
@@ -194,6 +252,7 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
         config=config, characters=characters, actors=actors,
         show_control=show_control,
         show_scheduler=show_scheduler,
+        llm_provider=llm_provider,
         orchestrator=Orchestrator(
             dispatcher,
             voice_provider,
@@ -224,10 +283,20 @@ def resolve_actor_id(
 
 
 def build_stt_provider(config: NumanConfig) -> STTProvider:
-    if config.stt.provider == "whisper-cpp":
+    if config.stt.provider in {"whisper-cpp", "whisper-server"}:
         model = Path(config.stt.model)
         if not model.is_absolute():
             model = PROJECT_ROOT / model
+        if config.stt.provider == "whisper-server":
+            return WhisperServerSTTProvider(WhisperServerConfig(
+                model_path=model,
+                command=config.stt.command,
+                language=config.stt.language,
+                prompt=config.stt.prompt,
+                host=config.stt.host,
+                port=config.stt.port,
+                use_gpu=config.stt.use_gpu,
+            ))
         return WhisperCppSTTProvider(WhisperCppConfig(
             model_path=model,
             command=config.stt.command,
@@ -241,9 +310,7 @@ def build_stt_provider(config: NumanConfig) -> STTProvider:
 
 
 def live_environment_errors(config: NumanConfig) -> list[str]:
-    errors = []
-    if importlib.util.find_spec("edge_tts") is None:
-        errors.append("edge-tts is not installed (install with: pip install -e '.[live]')")
+    errors = voice_environment_errors(config)
     if shutil.which("ffmpeg") is None:
         errors.append("ffmpeg is not installed or not on PATH")
     available = {device.selector for device in list_audio_outputs()}
@@ -253,8 +320,39 @@ def live_environment_errors(config: NumanConfig) -> list[str]:
     return errors
 
 
+def voice_environment_errors(config: NumanConfig) -> list[str]:
+    errors = []
+    active_ids = {character.voice_profile for character in config.characters.values()}
+    active_voices = [config.voices[profile_id] for profile_id in active_ids]
+    providers = {voice.provider for voice in active_voices}
+    dependencies = {
+        "edge-tts": ("edge_tts", "edge-tts"),
+        "piper": ("piper", "piper"),
+        "kokoro": ("kokoro_onnx", "kokoro"),
+    }
+    for provider in providers:
+        module, extra = dependencies.get(provider, (provider, provider))
+        if importlib.util.find_spec(module) is None:
+            errors.append(
+                f"{provider} is not installed (install with: pip install -e '.[{extra}]')"
+            )
+    for voice in active_voices:
+        for label, value in (
+            ("model", voice.model),
+            ("config", voice.model_config),
+            ("voices", voice.voices),
+        ):
+            if not value:
+                continue
+            path = Path(value)
+            path = path if path.is_absolute() else PROJECT_ROOT / path
+            if not path.is_file():
+                errors.append(f"voice {voice.id!r} {label} file is missing: {path}")
+    return errors
+
+
 def stt_environment_errors(config: NumanConfig) -> list[str]:
-    if config.stt.provider == "whisper-cpp":
+    if config.stt.provider in {"whisper-cpp", "whisper-server"}:
         provider = build_stt_provider(config)
         return provider.status_errors()
     return []

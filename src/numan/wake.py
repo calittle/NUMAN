@@ -182,7 +182,7 @@ class SpeechCapture:
         frame_samples: int = 512,
         speech_threshold: float = 100.0,
         start_timeout_s: float = 5.0,
-        end_silence_s: float = 1.1,
+        end_silence_s: float = 0.75,
         max_duration_s: float = 15.0,
         pre_roll_s: float = 0.25,
     ) -> None:
@@ -241,10 +241,12 @@ class WakeListener:
         detector,
         registry: WakeRegistry,
         microphone_device=None,
+        end_silence_s: float = 0.75,
     ):
         self.detector = detector
         self.registry = registry
         self.microphone_device = microphone_device
+        self.end_silence_s = end_silence_s
         self._stop = threading.Event()
 
     def stop(self) -> None:
@@ -324,6 +326,6 @@ class WakeListener:
                         active_target = self.registry.resolve(detected)
                         on_wake(active_target)
                         if on_query is not None:
-                            capture = SpeechCapture()
+                            capture = SpeechCapture(end_silence_s=self.end_silence_s)
                         pending.clear()
                         break

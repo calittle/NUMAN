@@ -66,11 +66,11 @@ function Download-WithRetry($Uri, $OutFile, $FriendlyName, $MinimumBytes = 1) {
 
 Step "Checking Python"
 if (-not (Get-Command py -ErrorAction SilentlyContinue)) {
-    throw "Python is missing. Install Python 3.12 or newer from python.org, check 'Add Python to PATH', reopen PowerShell, and rerun this script."
+    throw "Python is missing. Install 64-bit Python 3.13 from python.org, check 'Add Python to PATH', reopen PowerShell, and rerun this script."
 }
-& py -3 -c "import sys; print(sys.version); raise SystemExit(sys.version_info < (3, 12))"
+& py -3.13 -c "import sys; print(sys.version); raise SystemExit(sys.version_info[:2] != (3, 13))"
 if ($LASTEXITCODE -ne 0) {
-    throw "Python 3.12 or newer is required. Install it from python.org and rerun this script."
+    throw "Python 3.13 is required so both local Piper and Kokoro voices are supported. Install 64-bit Python 3.13 from python.org and rerun this script."
 }
 
 Install-WingetApp "git" "Git.Git" "Git"
@@ -80,10 +80,15 @@ $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [En
 
 Step "Creating NUMAN's private Python environment"
 if (-not (Test-Path ".venv\Scripts\python.exe")) {
-    & py -3 -m venv .venv
+    & py -3.13 -m venv .venv
+} else {
+    & .\.venv\Scripts\python.exe -c "import sys; raise SystemExit(sys.version_info[:2] != (3, 13))"
+    if ($LASTEXITCODE -ne 0) {
+        throw "The existing .venv was created with a Python version other than 3.13. Rename or remove .venv, then rerun setup."
+    }
 }
 & .\.venv\Scripts\python.exe -m pip install --upgrade pip
-& .\.venv\Scripts\python.exe -m pip install -e ".[dev,live,api,wake]"
+& .\.venv\Scripts\python.exe -m pip install -e ".[dev,live,local-tts,api,wake]"
 if ($LASTEXITCODE -ne 0) { throw "NUMAN's Python packages could not be installed." }
 
 Step "Checking the Microsoft Visual C++ runtime"
@@ -122,7 +127,7 @@ if (-not $SkipModels) {
     }
 
     Step "Installing the whisper.cpp command"
-    if (-not (Test-Path "tools\whisper\whisper-cli.exe")) {
+    if ((-not (Test-Path "tools\whisper\whisper-cli.exe")) -or (-not (Test-Path "tools\whisper\whisper-server.exe"))) {
         # Stable whisper.cpp releases do not always publish binary assets. Search
         # recent official releases (including their official nightly builds) for
         # the newest normal Windows x64 package instead of assuming /latest has it.
@@ -147,6 +152,9 @@ if (-not $SkipModels) {
         if (-not $Executable) { throw "whisper-cli.exe was not found in the downloaded archive." }
         New-Item -ItemType Directory -Force -Path "tools\whisper" | Out-Null
         Copy-Item (Join-Path $Executable.Directory.FullName "*") "tools\whisper" -Recurse -Force
+        if (-not (Test-Path "tools\whisper\whisper-server.exe")) {
+            throw "whisper-server.exe was not found in the downloaded whisper.cpp package."
+        }
         Remove-Item $Archive -Force -ErrorAction SilentlyContinue
         Remove-Item $Extracted -Recurse -Force -ErrorAction SilentlyContinue
     } else {
@@ -171,6 +179,12 @@ if (-not $SkipModels) {
     } else {
         Write-Host "Wake-word model is already present."
     }
+
+    Step "Downloading local voice models"
+    & .\.venv\Scripts\numan.exe voice models install
+    if ($LASTEXITCODE -ne 0) {
+        throw "The Piper and Kokoro voice models could not be installed or verified."
+    }
 }
 
 Step "Installing Ollama's NUMAN model"
@@ -183,6 +197,8 @@ if (Get-Command ollama -ErrorAction SilentlyContinue) {
 Step "Final check"
 & .\.venv\Scripts\numan.exe wake compile
 if ($LASTEXITCODE -ne 0) { throw "The wake phrases could not be prepared. Read the error above." }
+& .\.venv\Scripts\numan.exe voice cache build
+if ($LASTEXITCODE -ne 0) { throw "The deterministic voice cache could not be prepared." }
 & .\.venv\Scripts\numan.exe doctor
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`nSetup is complete. NUMAN is ready." -ForegroundColor Green

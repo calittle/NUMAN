@@ -12,6 +12,8 @@ from numan.transcription import (
     TranscriptionError,
     WhisperCppConfig,
     WhisperCppSTTProvider,
+    WhisperServerConfig,
+    WhisperServerSTTProvider,
     resolve_whisper_command,
 )
 
@@ -86,6 +88,29 @@ class WhisperProviderTests(unittest.TestCase):
         self.assertEqual(len(errors), 2)
         self.assertIn("command not found", errors[0])
         self.assertIn("model not found", errors[1])
+
+    def test_server_request_uses_local_multipart_endpoint(self):
+        captured = {}
+
+        def urlopen(request, timeout):
+            captured["url"] = request.full_url
+            captured["content_type"] = request.headers["Content-type"]
+            captured["body"] = request.data
+            return _Response(json.dumps({"text": " Welcome aboard.\n"}).encode())
+
+        with tempfile.TemporaryDirectory() as directory:
+            audio = Path(directory) / "speech.wav"
+            audio.write_bytes(b"RIFF-local")
+            provider = WhisperServerSTTProvider(
+                WhisperServerConfig(Path("model.bin"), host="127.0.0.1", port=8178)
+            )
+            with patch("urllib.request.urlopen", side_effect=urlopen):
+                text = provider._transcribe_sync(audio)
+
+        self.assertEqual(text, "Welcome aboard.")
+        self.assertEqual(captured["url"], "http://127.0.0.1:8178/inference")
+        self.assertIn("multipart/form-data", captured["content_type"])
+        self.assertIn(b"RIFF-local", captured["body"])
 
 
 if __name__ == "__main__":

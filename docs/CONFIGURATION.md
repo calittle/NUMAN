@@ -93,7 +93,7 @@ In JSON, every item except the last item in an object or list needs a comma.
 JSON does not allow comments. Use straight quotation marks, not curly “smart”
 quotes around keys or values.
 
-IDs such as `grog`, `grog-dev`, and `grog-edge-ryan-shrill` are internal names.
+IDs such as `grog`, `grog-dev`, and `grog-piper-alan-shrill` are internal names.
 They must match everywhere they are referenced. Treat them like labels on
 cables: changing one label means changing every connection to it.
 
@@ -120,7 +120,7 @@ File: `config\numan.toml`
 [characters.grog]
 name = "Captain Grog"
 system_prompt = "You are Captain Grog ..."
-voice_profile = "grog-edge-ryan-shrill"
+voice_profile = "grog-piper-alan-shrill"
 show_actions = ["storm", "lightning"]
 ```
 
@@ -151,34 +151,48 @@ is an Andy/developer change. Rob can safely tune the two existing characters.
 File: `config\numan.toml`
 
 ```toml
-[voices.grog-edge-ryan-shrill]
-provider = "edge-tts"
-voice = "en-GB-RyanNeural"
-rate = "-8%"
-volume = "+5%"
-pitch = "-20Hz"
+[voices.grog-local]
+provider = "kokoro"
+model = "models/tts/kokoro/kokoro-v1.0.onnx"
+voices = "models/tts/kokoro/voices-v1.0.bin"
+voice = "am_adam"
+language = "en-us"
+speed = 1.0
 sample_rate = 24000
 channels = 1
+end_silence_ms = 750
 ```
 
-The supported live voice provider is currently `edge-tts`. Internet access is
-required when NUMAN needs to synthesize a line that is not already cached.
+NUMAN supports the fully local `piper` and `kokoro` providers. Their models are
+loaded once when live mode starts and synthesis needs no network connection.
+`edge-tts` remains available as an optional compatibility provider.
 
-- `voice` selects the Microsoft voice.
+A Piper profile instead uses `model`, optional `config`, `speaker`,
+`length_scale`, `noise_scale`, and `noise_w_scale`. A Kokoro profile uses
+`model`, `voices`, `voice`, `language`, and `speed`. Model paths are relative
+to the NUMAN project unless absolute.
+
+- `voice` selects an Edge or Kokoro voice within the configured model bundle.
 - `rate` changes speaking speed. Valid range: `-50%` through `+100%`.
 - `volume` changes source volume. Valid range: `-100%` through `+100%`.
 - `pitch` changes source pitch. Valid range: `-100Hz` through `+100Hz`.
 - `sample_rate` and `channels` describe generated audio. Leave them at `24000`
   and `1` unless Andy is changing the audio pipeline.
 
-Keep the sign and unit in delivery settings, including zero values such as
-`+0%` and `+0Hz`.
+`rate`, `volume`, and `pitch` apply to the optional Edge provider. Local
+providers use their numeric controls before the common tiki voice console.
 
 Test a profile with:
 
 ```powershell
 .\.venv\Scripts\numan.exe ask --character grog --live "Welcome to the bar"
 ```
+
+Final postprocessed WAVs are cached automatically. Cache entries include the
+response text, provider, model identity, synthesis controls, and tiki-console
+filter, so changing any voice setting creates a new entry. NUMAN stores the
+cache in `%LOCALAPPDATA%\NUMAN\cache\tts` on Windows and
+`~/Library/Caches/NUMAN/tts` on macOS.
 
 ### Tiki voice console
 
@@ -265,20 +279,30 @@ List input selectors with:
 
 Use `system-default` or copy the complete selector. NUMAN requires one channel;
 leave the sample rate at `16000` unless Andy changes the speech models.
+`end_silence_ms` is the quiet period that ends a question; lowering it improves
+response time but can clip a speaker who pauses between phrases. The supported
+range is 200–2000 ms, with 750 ms as the cross-platform default.
 
 The `[stt]` section controls speech-to-text. The normal local setup is:
 
 ```toml
 [stt]
-provider = "whisper-cpp"
+provider = "whisper-server"
 model = "models/ggml-base.en.bin"
-command = "whisper-cli"
+command = "whisper-server"
+host = "127.0.0.1"
+port = 8178
+use_gpu = false
 language = "en"
 prompt = "Captain Grog, Polly, Mai Tai, ..."
 ```
 
 - `model` is the local Whisper model file.
-- `command` is the installed Whisper executable.
+- `command` is the installed Whisper server executable. NUMAN starts it on
+  localhost and keeps the model resident between questions.
+- `host` must remain localhost; captured speech is never sent off the machine.
+- `use_gpu` enables whisper.cpp acceleration when the installation supports it;
+  CPU mode is the cross-platform default.
 - `language` is the recognition language.
 - `prompt` gives Whisper spellings it should expect. Add unusual drink names,
   character names, or venue terms here, separated by commas.

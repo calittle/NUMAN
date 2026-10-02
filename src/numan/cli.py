@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import importlib.util
 import json
 import shutil
 import sys
@@ -15,17 +14,22 @@ from .application import (
     PROJECT_ROOT,
     build_application,
     build_stt_provider,
+    build_voice_provider,
     build_wake_config,
     build_wake_registry,
     live_environment_errors,
     resolve_actor_id,
     stt_environment_errors,
+    voice_environment_errors,
 )
 from .configuration import ConfigurationError, load_config
 from .devices import list_audio_inputs, list_audio_outputs, resolve_input_device
 from .engine.models import Utterance
 from .engine.providers import LLMProviderError, OllamaConfig, OllamaLLMProvider
-from .transcription import MicrophoneRecorder, TranscriptionError, WhisperCppSTTProvider
+from .model_assets import install_voice_models, verify_voice_models
+from .pre_render import deterministic_responses, pre_render_responses
+from .transcription import MicrophoneRecorder, TranscriptionError
+from .voice import default_voice_cache_dir
 from .wake import (
     SherpaKeywordCompiler,
     SherpaKeywordDetector,
@@ -60,6 +64,20 @@ def build_parser() -> argparse.ArgumentParser:
 
     show = subparsers.add_parser("show", help="inspect semantic show control")
     show.add_subparsers(dest="show_command", required=True).add_parser("status")
+
+    voice = subparsers.add_parser("voice", help="manage local voice models")
+    voice_commands = voice.add_subparsers(dest="voice_command", required=True)
+    models = voice_commands.add_parser("models", help="install or verify model files")
+    model_commands = models.add_subparsers(dest="voice_models_command", required=True)
+    for command in ("status", "install"):
+        item = model_commands.add_parser(command)
+        item.add_argument(
+            "--provider", choices=("all", "piper", "kokoro"), default="all"
+        )
+    cache = voice_commands.add_parser("cache", help="inspect or pre-render speech")
+    cache_commands = cache.add_subparsers(dest="voice_cache_command", required=True)
+    cache_commands.add_parser("status")
+    cache_commands.add_parser("build")
 
     wake = subparsers.add_parser("wake", help="configure and test wake words")
     wake_commands = wake.add_subparsers(dest="wake_command", required=True)
@@ -137,6 +155,7 @@ async def _perform_question(args, question: str) -> int:
     character_id = args.character or config.default_character
     actor_id = resolve_actor_id(config, character_id, args.actor)
     application = build_application(config, live=args.live)
+    await application.warmup()
     try:
         character = application.characters[character_id]
     except KeyError as exc:
@@ -169,9 +188,13 @@ async def _perform_question(args, question: str) -> int:
             for item in result.dispatch_trace.attempts
         ],
         "timings": {
+            "transcription_ms": result.timings.transcription_ms,
             "dispatch_ms": result.timings.dispatch_ms,
+            "llm_first_token_ms": result.timings.llm_first_token_ms,
+            "llm_total_ms": result.timings.llm_total_ms,
             "synthesis_ms": result.timings.synthesis_ms,
             "queue_wait_ms": result.timings.queue_wait_ms,
+            "answer_start_ms": result.timings.answer_start_ms,
             "playback_ms": result.timings.playback_ms,
             "total_ms": result.timings.total_ms,
         },
@@ -182,7 +205,7 @@ async def _perform_question(args, question: str) -> int:
 async def _stt_status(path: Path) -> int:
     config = load_config(path)
     provider = build_stt_provider(config)
-    errors = provider.status_errors() if isinstance(provider, WhisperCppSTTProvider) else []
+    errors = provider.status_errors() if hasattr(provider, "status_errors") else []
     print(json.dumps({
         "provider": config.stt.provider,
         "model": config.stt.model,
@@ -218,11 +241,79 @@ def _show_status(path: Path) -> int:
     return 0
 
 
+def _voice_models(command: str, provider: str) -> int:
+    installed = []
+    if command == "install":
+        def show_progress(asset, phase, downloaded, total):
+            name = Path(asset.relative_path).name
+            if phase == "downloading":
+                received = downloaded / (1024 * 1024)
+                if total:
+                    percent = min(100, downloaded * 100 / total)
+                    message = (
+                        f"Downloading {name}: {received:.1f}/{total / (1024 * 1024):.1f} MiB "
+                        f"({percent:.0f}%)"
+                    )
+                else:
+                    message = f"Downloading {name}: {received:.1f} MiB"
+                print(f"\r{message:<79}", end="", file=sys.stderr, flush=True)
+                return
+            if phase == "checking":
+                print(f"Checking {name}...", file=sys.stderr, flush=True)
+            elif phase == "cached":
+                print(f"Using verified {name}", file=sys.stderr, flush=True)
+            elif phase == "verifying":
+                print(f"\rVerifying {name}...{'':<55}", file=sys.stderr, flush=True)
+            elif phase == "installed":
+                print(f"Installed {name}", file=sys.stderr, flush=True)
+
+        installed = [
+            str(path)
+            for path in install_voice_models(
+                PROJECT_ROOT, provider, progress=show_progress
+            )
+        ]
+    results = verify_voice_models(PROJECT_ROOT, provider)
+    ready = all(item["valid"] for item in results)
+    print(json.dumps({"ready": ready, "installed": installed, "models": results}, indent=2))
+    return 0 if ready else 1
+
+
+async def _voice_cache(command: str, config_path: Path) -> int:
+    config = load_config(config_path)
+    expected = deterministic_responses(PROJECT_ROOT)
+    cache_dir = default_voice_cache_dir()
+    if command == "status":
+        print(json.dumps({
+            "cache_dir": str(cache_dir),
+            "cached_wavs": len(tuple(cache_dir.glob("tts-*.wav"))),
+            "deterministic_lines": {key: len(value) for key, value in expected.items()},
+        }, indent=2))
+        return 0
+    errors = voice_environment_errors(config)
+    if shutil.which("ffmpeg") is None:
+        errors.append("ffmpeg is not installed or not on PATH")
+    if errors:
+        raise ConfigurationError("; ".join(errors))
+    provider = build_voice_provider(config)
+    counts = await pre_render_responses(
+        PROJECT_ROOT,
+        provider,
+        {key: item.voice_profile for key, item in config.characters.items()},
+    )
+    print(json.dumps({"cache_dir": str(cache_dir), "rendered": counts}, indent=2))
+    return 0
+
+
 async def _transcribe(path: Path, audio: Path) -> int:
     if not audio.is_file():
         raise ConfigurationError(f"audio file not found: {audio}")
     config = load_config(path)
-    text = await build_stt_provider(config).transcribe(audio)
+    provider = build_stt_provider(config)
+    try:
+        text = await provider.transcribe(audio)
+    finally:
+        await _close_stt(provider)
     print(json.dumps({"provider": config.stt.provider, "transcript": text}, indent=2))
     return 0
 
@@ -265,10 +356,16 @@ async def _wake(args) -> int:
         return 0
     detector = SherpaKeywordDetector(wake_config, keywords)
     microphone = resolve_input_device(config.microphone.device)
-    listener = WakeListener(detector, registry, microphone)
+    listener = WakeListener(
+        detector,
+        registry,
+        microphone,
+        end_silence_s=config.microphone.end_silence_ms / 1_000,
+    )
     print("Listening for: " + ", ".join(registry.phrases), flush=True)
     print("Press Ctrl-C to stop.", flush=True)
     on_query = None
+    stt_provider = None
     if command == "run":
         errors = stt_environment_errors(config)
         if args.live:
@@ -276,6 +373,7 @@ async def _wake(args) -> int:
         if errors:
             raise ConfigurationError("; ".join(errors))
         application = build_application(config, live=args.live)
+        await application.warmup()
         stt_provider = build_stt_provider(config)
         loop = asyncio.get_running_loop()
 
@@ -301,6 +399,22 @@ async def _wake(args) -> int:
                 "response": result.plan.text,
                 "played": result.played,
                 "stall_played": result.stall_played,
+                "timings": {
+                    "transcription_ms": result.timings.transcription_ms,
+                    "dispatch_ms": result.timings.dispatch_ms,
+                    "llm_first_token_ms": result.timings.llm_first_token_ms,
+                    "llm_total_ms": result.timings.llm_total_ms,
+                    "synthesis_ms": result.timings.synthesis_ms,
+                    "queue_wait_ms": result.timings.queue_wait_ms,
+                    "answer_start_ms": result.timings.answer_start_ms,
+                    "playback_ms": result.timings.playback_ms,
+                    "total_ms": result.timings.total_ms,
+                },
+                "dispatch": [
+                    {"rule": item.rule, "matched": item.matched,
+                     "duration_ms": item.duration_ms}
+                    for item in result.dispatch_trace.attempts
+                ],
                 "show_actions": list(result.plan.show_actions),
                 "scheduled_actions": [
                     {
@@ -331,6 +445,9 @@ async def _wake(args) -> int:
         listener.stop()
         print("\nWake listener stopped.", flush=True)
         return 130
+    finally:
+        if stt_provider is not None:
+            await _close_stt(stt_provider)
     return 0
 
 
@@ -359,12 +476,20 @@ async def _listen(args) -> int:
         finally:
             stop.set()
         audio = await recording
+    provider = build_stt_provider(config)
     try:
-        transcript = await build_stt_provider(config).transcribe(audio)
+        transcript = await provider.transcribe(audio)
     finally:
+        await _close_stt(provider)
         audio.unlink(missing_ok=True)
     print(f"Heard: {transcript}", flush=True)
     return await _perform_question(args, transcript)
+
+
+async def _close_stt(provider) -> None:
+    close = getattr(provider, "close", None)
+    if close is not None:
+        await close()
 
 
 async def _llm_status(path: Path) -> int:
@@ -398,7 +523,7 @@ async def _doctor(path: Path) -> int:
 
     checks.append((
         "Python",
-        sys.version_info >= (3, 12),
+        sys.version_info[:2] == (3, 13),
         f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
     ))
     checks.append((
@@ -406,10 +531,11 @@ async def _doctor(path: Path) -> int:
         shutil.which("ffmpeg") is not None,
         "ready" if shutil.which("ffmpeg") else f"not found; {setup_hint}",
     ))
+    voice_errors = voice_environment_errors(config)
     checks.append((
-        "Voice software",
-        importlib.util.find_spec("edge_tts") is not None,
-        "ready" if importlib.util.find_spec("edge_tts") else "not installed; rerun setup",
+        "Local voices",
+        not voice_errors,
+        "ready" if not voice_errors else "; ".join(voice_errors),
     ))
 
     stt_errors = stt_environment_errors(config)
@@ -480,6 +606,10 @@ def main(argv=None) -> int:
             return asyncio.run(_stt_status(args.config))
         if args.command == "show":
             return _show_status(args.config)
+        if args.command == "voice":
+            if args.voice_command == "models":
+                return _voice_models(args.voice_models_command, args.provider)
+            return asyncio.run(_voice_cache(args.voice_cache_command, args.config))
         if args.command == "wake":
             return asyncio.run(_wake(args))
         if args.command == "transcribe":

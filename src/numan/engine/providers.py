@@ -55,6 +55,7 @@ class OllamaConfig:
     base_url: str
     model: str
     timeout_s: float = 90.0
+    keep_alive: str = "8h"
 
 
 class OllamaLLMProvider:
@@ -68,14 +69,73 @@ class OllamaLLMProvider:
             self._complete_sync, utterance, character, tuple(history)
         )
 
+    async def stream(self, utterance, character, history=()):
+        """Yield native Ollama chat fragments without blocking the event loop."""
+        messages = self._messages(utterance, character, tuple(history))
+        loop = asyncio.get_running_loop()
+        queue: asyncio.Queue = asyncio.Queue()
+        finished = object()
+
+        def read_stream() -> None:
+            body = {
+                "model": self._config.model,
+                "messages": messages,
+                "stream": True,
+                "keep_alive": self._config.keep_alive,
+                "options": {"num_predict": 80},
+            }
+            request = urllib.request.Request(
+                f"{self._config.base_url.rstrip('/')}/chat",
+                data=json.dumps(body).encode(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(
+                    request, timeout=self._config.timeout_s
+                ) as response:
+                    for line in response:
+                        if not line.strip():
+                            continue
+                        payload = json.loads(line)
+                        fragment = payload.get("message", {}).get("content", "")
+                        if fragment:
+                            loop.call_soon_threadsafe(queue.put_nowait, fragment)
+            except Exception as exc:
+                loop.call_soon_threadsafe(queue.put_nowait, exc)
+            finally:
+                loop.call_soon_threadsafe(queue.put_nowait, finished)
+
+        task = asyncio.create_task(asyncio.to_thread(read_stream))
+        try:
+            while True:
+                item = await queue.get()
+                if item is finished:
+                    break
+                if isinstance(item, Exception):
+                    raise LLMProviderError(f"Ollama streaming request failed: {item}") from item
+                yield item
+        finally:
+            await task
+
     async def list_models(self) -> tuple[str, ...]:
         return await asyncio.to_thread(self._list_models_sync)
 
+    async def warmup(self) -> None:
+        await asyncio.to_thread(
+            self._request,
+            "generate",
+            method="POST",
+            body={
+                "model": self._config.model,
+                "prompt": "",
+                "stream": False,
+                "keep_alive": self._config.keep_alive,
+            },
+        )
+
     def _complete_sync(self, utterance, character, history) -> str:
-        messages = [{"role": "system", "content": character.system_prompt}]
-        messages.extend({"role": turn.role.value, "content": turn.text} for turn in history)
-        if not history or history[-1].text != utterance.text:
-            messages.append({"role": "user", "content": utterance.text})
+        messages = self._messages(utterance, character, history)
         payload = self._request(
             "chat",
             method="POST",
@@ -83,7 +143,7 @@ class OllamaLLMProvider:
                 "model": self._config.model,
                 "messages": messages,
                 "stream": False,
-                "keep_alive": "30m",
+                "keep_alive": self._config.keep_alive,
                 "options": {"num_predict": 80},
             },
         )
@@ -94,6 +154,14 @@ class OllamaLLMProvider:
         if not text:
             raise LLMProviderError("Ollama returned an empty response")
         return text
+
+    @staticmethod
+    def _messages(utterance, character, history):
+        messages = [{"role": "system", "content": character.system_prompt}]
+        messages.extend({"role": turn.role.value, "content": turn.text} for turn in history)
+        if not history or history[-1].text != utterance.text:
+            messages.append({"role": "user", "content": utterance.text})
+        return messages
 
     def _list_models_sync(self) -> tuple[str, ...]:
         payload = self._request("tags")

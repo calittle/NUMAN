@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from dataclasses import asdict
 from pathlib import Path
 from pydantic import BaseModel
@@ -31,7 +32,14 @@ def create_app(
         raise RuntimeError("install NUMAN with [api] to run the API") from exc
 
     runtime = application or build_application(load_config(config_path), live=live)
-    app = FastAPI(title="NUMAN", version="0.1.0")
+
+    @asynccontextmanager
+    async def lifespan(app):
+        del app
+        await runtime.warmup()
+        yield
+
+    app = FastAPI(title="NUMAN", version="0.1.0", lifespan=lifespan)
 
     @app.get("/health")
     async def health():

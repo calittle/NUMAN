@@ -49,6 +49,15 @@ class VoiceConfig:
     channels: int
     ffmpeg_filter: str | None
     tiki_console: TikiConsoleConfig | None
+    model: str = ""
+    model_config: str = ""
+    voices: str = ""
+    language: str = "en-us"
+    speed: float = 1.0
+    speaker: int | None = None
+    length_scale: float = 1.0
+    noise_scale: float = 0.667
+    noise_w_scale: float = 0.8
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,6 +81,8 @@ class LLMConfig:
     endpoint: str
     model: str
     api_key_env: str
+    warm_on_start: bool = True
+    keep_alive: str = "8h"
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,6 +94,9 @@ class STTConfig:
     api_key_env: str
     language: str
     prompt: str
+    host: str = "127.0.0.1"
+    port: int = 8178
+    use_gpu: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,6 +104,7 @@ class MicrophoneConfig:
     device: str
     sample_rate: int
     channels: int
+    end_silence_ms: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -157,6 +172,23 @@ class NumanConfig:
                     f"{character.voice_profile!r}"
                 )
         for voice in self.voices.values():
+            if voice.provider not in {"edge-tts", "piper", "kokoro"}:
+                errors.append(f"voice {voice.id!r} has unsupported provider {voice.provider!r}")
+            if voice.provider == "edge-tts" and not voice.voice.strip():
+                errors.append(f"voice {voice.id!r} edge-tts provider requires voice")
+            if voice.provider == "piper" and not voice.model.strip():
+                errors.append(f"voice {voice.id!r} Piper provider requires model")
+            if voice.provider == "kokoro":
+                if not voice.model.strip() or not voice.voices.strip() or not voice.voice.strip():
+                    errors.append(
+                        f"voice {voice.id!r} Kokoro provider requires model, voices, and voice"
+                    )
+            if voice.speed <= 0 or voice.length_scale <= 0:
+                errors.append(f"voice {voice.id!r} speed controls must be positive")
+            if voice.noise_scale < 0 or voice.noise_w_scale < 0:
+                errors.append(f"voice {voice.id!r} noise controls cannot be negative")
+            if voice.speaker is not None and voice.speaker < 0:
+                errors.append(f"voice {voice.id!r} speaker cannot be negative")
             console = voice.tiki_console
             if console is not None and voice.ffmpeg_filter:
                 errors.append(
@@ -220,18 +252,25 @@ class NumanConfig:
         if self.llm.provider == "openai-compatible":
             if not self.llm.endpoint or not self.llm.model:
                 errors.append("openai-compatible LLM requires endpoint and model")
-        if self.stt.provider not in {"whisper-cpp", "deepgram"}:
+        if self.stt.provider not in {"whisper-cpp", "whisper-server", "deepgram"}:
             errors.append(f"unsupported STT provider {self.stt.provider!r}")
-        if self.stt.provider == "whisper-cpp" and (
+        if self.stt.provider in {"whisper-cpp", "whisper-server"} and (
             not self.stt.command or not self.stt.model
         ):
-            errors.append("whisper-cpp STT requires command and model")
+            errors.append("local Whisper STT requires command and model")
+        if self.stt.provider == "whisper-server" and (
+            self.stt.host not in {"127.0.0.1", "localhost"}
+            or not 1 <= self.stt.port <= 65_535
+        ):
+            errors.append("whisper-server requires a localhost host and valid port")
         if self.stt.provider == "deepgram" and (
             not self.stt.endpoint or not self.stt.api_key_env
         ):
             errors.append("Deepgram STT requires endpoint and API key environment name")
         if self.microphone.sample_rate <= 0 or self.microphone.channels != 1:
             errors.append("microphone requires a positive sample rate and one channel")
+        if not 200 <= self.microphone.end_silence_ms <= 2_000:
+            errors.append("microphone end_silence_ms must be between 200 and 2000")
         if self.show_control.provider not in {"fake", "none", "lor-osc-trigger"}:
             errors.append(
                 f"unsupported show-control provider {self.show_control.provider!r}"
@@ -325,7 +364,7 @@ def load_config(path: str | Path) -> NumanConfig:
             key: VoiceConfig(
                 id=key,
                 provider=_string(value, "provider"),
-                voice=_string(value, "voice"),
+                voice=str(value.get("voice", "")),
                 rate=str(value.get("rate", "+0%")),
                 volume=str(value.get("volume", "+0%")),
                 pitch=str(value.get("pitch", "+0Hz")),
@@ -333,6 +372,15 @@ def load_config(path: str | Path) -> NumanConfig:
                 channels=int(value.get("channels", 1)),
                 ffmpeg_filter=value.get("ffmpeg_filter"),
                 tiki_console=_tiki_console(value.get("tiki_console")),
+                model=str(value.get("model", "")),
+                model_config=str(value.get("config", "")),
+                voices=str(value.get("voices", "")),
+                language=str(value.get("language", "en-us")),
+                speed=float(value.get("speed", 1.0)),
+                speaker=(int(value["speaker"]) if "speaker" in value else None),
+                length_scale=float(value.get("length_scale", 1.0)),
+                noise_scale=float(value.get("noise_scale", 0.667)),
+                noise_w_scale=float(value.get("noise_w_scale", 0.8)),
             )
             for key, value in _table(raw, "voices").items()
         }
@@ -361,6 +409,8 @@ def load_config(path: str | Path) -> NumanConfig:
                 endpoint=str(llm_raw.get("endpoint", "")),
                 model=str(llm_raw.get("model", "")),
                 api_key_env=_string(llm_raw, "api_key_env"),
+                warm_on_start=bool(llm_raw.get("warm_on_start", True)),
+                keep_alive=str(llm_raw.get("keep_alive", "8h")),
             ),
             stt=STTConfig(
                 provider=_string(stt_raw, "provider"),
@@ -370,11 +420,15 @@ def load_config(path: str | Path) -> NumanConfig:
                 api_key_env=_string(stt_raw, "api_key_env"),
                 language=_string(stt_raw, "language"),
                 prompt=str(stt_raw.get("prompt", "")),
+                host=str(stt_raw.get("host", "127.0.0.1")),
+                port=int(stt_raw.get("port", 8178)),
+                use_gpu=bool(stt_raw.get("use_gpu", False)),
             ),
             microphone=MicrophoneConfig(
                 device=_string(microphone_raw, "device"),
                 sample_rate=int(microphone_raw.get("sample_rate", 16_000)),
                 channels=int(microphone_raw.get("channels", 1)),
+                end_silence_ms=int(microphone_raw.get("end_silence_ms", 750)),
             ),
             show_control=ShowControlConfig(
                 provider=_string(show_control_raw, "provider"),

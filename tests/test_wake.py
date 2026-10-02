@@ -92,6 +92,13 @@ class WakeRegistryTests(unittest.TestCase):
         self.assertFalse(worker.is_alive())
         self.assertEqual(detected, [target])
 
+    def test_listener_retains_configured_end_silence(self):
+        registry = WakeRegistry((
+            WakeTarget("grog", ("hey captain grog",), "grog", "bird"),
+        ))
+        listener = WakeListener(object(), registry, end_silence_s=0.6)
+        self.assertEqual(listener.end_silence_s, 0.6)
+
 
 class SherpaKeywordDetectorTests(unittest.TestCase):
     def test_detection_returns_keyword_and_starts_a_fresh_stream(self):

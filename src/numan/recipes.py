@@ -39,6 +39,7 @@ class JsonCocktailProvider:
         except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
             raise RecipeFormatError(f"cannot load cocktail recipes from {source}: {exc}") from exc
         self._recipes: dict[str, CocktailRecipe] = {}
+        self._unique_recipes = recipes
         for recipe in recipes:
             for label in (recipe.name, *recipe.aliases):
                 key = _recipe_key(label)
@@ -66,6 +67,9 @@ class JsonCocktailProvider:
         del character
         recipe = self._recipes.get(_recipe_key(query))
         return format_recipe(recipe) if recipe else None
+
+    def responses(self) -> tuple[str, ...]:
+        return tuple(format_recipe(recipe) for recipe in self._unique_recipes)
 
 
 def _recipe_key(value: str) -> str:

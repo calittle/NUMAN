@@ -7,11 +7,16 @@ provider = "ollama"
 endpoint = "http://127.0.0.1:11434/api"
 model = "llama3.2:3b"
 api_key_env = "NUMAN_LLM_API_KEY"
+warm_on_start = true
+keep_alive = "8h"
 
 [stt]
-provider = "whisper-cpp"
+provider = "whisper-server"
 model = "models/ggml-base.en.bin"
-command = "whisper-cli"
+command = "whisper-server"
+host = "127.0.0.1"
+port = 8178
+use_gpu = false
 endpoint = "https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true"
 api_key_env = "DEEPGRAM_API_KEY"
 language = "en"
@@ -21,6 +26,7 @@ prompt = "Captain Grog, Polly, Mai Tai, Zombie, Painkiller, Jungle Bird, Navy Gr
 device = "system-default"
 sample_rate = 16000
 channels = 1
+end_silence_ms = 750
 
 # Hardware-safe semantic show control. NUMAN names the effect; Light-O-Rama
 # will eventually own the sequence, channels, relays, and choreography.
@@ -58,26 +64,27 @@ actor = "polly-dev"
 [characters.grog]
 name = "Captain Grog"
 system_prompt = "You are Captain Grog, a snarky, grizzled old British pirate parrot who tends a tiki bar. Your exterior is gruff and your insults are sharp, barbed, and often pun-laden, but underneath you are loyal and soft-hearted. Speak with a rolling, weathered pirate cadence. Favor contractions, punchy clauses, and occasional nautical phrasing. Avoid formal sentence structure, repetitive arrs, and long pauses. Never become cruel. Answer in one or two short sentences. Never write stage directions, role labels, sound effects, or asterisks; output only words Captain Grog should speak aloud. Never invent cocktail ingredients or recipes. If a drink name is unclear or you do not know its established recipe, ask the guest to repeat the name or admit that you do not know."
-voice_profile = "grog-edge-ryan-shrill"
+voice_profile = "grog-piper-alan-shrill"
 show_actions = ["storm", "lightning", "volcano_rumble", "blackout", "present_jet_pilot", "present_suffering_bastard"]
 
 [characters.polly]
 name = "Polly"
 system_prompt = "You are Polly, a quick-witted, self-possessed woman of the tiki bar with salt air in her feathers and adventure in her voice. You sound like someone who might once have captained a ship, though you never confirm it. Your warmth is genuine, your confidence is effortless, and your sweetly delivered taunts have a sharp little hook. Speak with lively rhythm, natural contractions, and occasional nautical turns of phrase, but never force a pirate dialect or repeat arr. Answer in one or two punchy sentences. Never become cruel. Never write stage directions, role labels, sound effects, or asterisks; output only words Polly should speak aloud. Never invent cocktail ingredients or recipes. If a drink name is unclear or you do not know its established recipe, ask the guest to repeat the name or admit that you do not know."
-voice_profile = "polly-edge-jenny-bright"
+voice_profile = "polly-kokoro-sarah-bright"
 show_actions = ["storm", "lightning", "present_jet_pilot", "present_suffering_bastard"]
 
-[voices.grog-edge-ryan-shrill]
-provider = "edge-tts"
-voice = "en-GB-RyanNeural"
-rate = "-8%"
-volume = "+5%"
-pitch = "-20Hz"
+[voices.grog-piper-alan-shrill]
+provider = "piper"
+model = "models/tts/piper/en_GB-alan-medium.onnx"
+config = "models/tts/piper/en_GB-alan-medium.onnx.json"
+length_scale = 1.08
+noise_scale = 0.667
+noise_w_scale = 0.8
 sample_rate = 24000
 channels = 1
 
 # Captain Grog's tiki voice console. These values reproduce his current sound.
-[voices.grog-edge-ryan-shrill.tiki_console]
+[voices.grog-piper-alan-shrill.tiki_console]
 # Raise/lower the voice in semitones without changing speaking speed. Range: -12..12.
 perch_pitch_semitones = -1
 # Low-mid weight for a fuller, weathered chest tone.
@@ -97,17 +104,18 @@ coconut_radio_bits = 9
 # Final loudness target. Closer to zero is louder. Sensible range: -30..-5 LUFS.
 rum_barrel_lufs = -12
 
-[voices.polly-edge-jenny-bright]
-provider = "edge-tts"
-voice = "en-US-JennyNeural"
-rate = "+4%"
-volume = "+3%"
-pitch = "-8Hz"
+[voices.polly-kokoro-sarah-bright]
+provider = "kokoro"
+model = "models/tts/kokoro/kokoro-v1.0.onnx"
+voices = "models/tts/kokoro/voices-v1.0.bin"
+voice = "af_sarah"
+language = "en-us"
+speed = 1.04
 sample_rate = 24000
 channels = 1
 
 # Polly is bright and agile without becoming thin or childlike.
-[voices.polly-edge-jenny-bright.tiki_console]
+[voices.polly-kokoro-sarah-bright.tiki_console]
 perch_pitch_semitones = 1
 barrel_chest_hz = 260
 barrel_chest_db = 3
