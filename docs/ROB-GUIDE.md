@@ -256,6 +256,10 @@ Say “Hey Captain Grog” and “Hey Polly.” Press Ctrl-C once when finished.
 
 ## Configuration
 
+For a complete explanation of characters, actors, voices, recipes, prepared
+responses, wake targets, audio routes, drink cues, and Light-O-Rama mappings,
+see [Rob's NUMAN Configuration Guide](CONFIGURATION.md).
+
 The main settings file is:
 
 ```text

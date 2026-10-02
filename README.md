@@ -21,8 +21,10 @@ default: it uses fake synthesis and a null audio backend.
 
 The supported production target is 64-bit Windows with Python 3.12 or newer.
 Python 3.12 and 3.14 are exercised by the project. For the
-nontechnical installation, daily-operation, configuration, backup, and
-troubleshooting instructions, use [Rob's NUMAN Guide](docs/ROB-GUIDE.md).
+nontechnical installation, daily-operation, backup, and troubleshooting
+instructions, use [Rob's NUMAN Guide](docs/ROB-GUIDE.md). For a complete
+operator-facing reference to settings, actors, recipes, response data, and show
+control, use [Rob's NUMAN Configuration Guide](docs/CONFIGURATION.md).
 The one-time installer and double-clickable start/check launchers are in
 `scripts/windows`. `UPDATE-NUMAN.cmd` safely fast-forwards an installed checkout
 and refreshes its environment. Run `numan doctor` at any time for a
