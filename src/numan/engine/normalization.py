@@ -8,6 +8,8 @@ _SPACE_RE = re.compile(r"\s+")
 _NON_STABLE_RE = re.compile(r"[^a-z0-9 ]")
 _ROUTINE_PUNCT_RE = re.compile(r"[?.!]")
 _TRAILING_QUERY_PUNCT_RE = re.compile(r"[?,]+$")
+_KRAKEN_HOMOPHONE_RE = re.compile(r"\b(?:crackin|cracking|cracken)\b")
+_KRAKEN_CURSE_RE = re.compile(r"\bkraken curse\b")
 
 # Conservative corrections for common speech-recognition homophones. These
 # apply only after a phrase has already matched a drink-query form.
@@ -36,7 +38,12 @@ def collapse_spaces(text: str) -> str:
 
 def stable_text(text: str) -> str:
     """Build a stable cache key using lowercase ASCII letters/digits/spaces."""
-    return collapse_spaces(_NON_STABLE_RE.sub("", text.casefold()))
+    normalized = collapse_spaces(_NON_STABLE_RE.sub("", text.casefold()))
+    # Whisper often renders the venue's short-a pronunciation of Kraken as
+    # "crackin'". Correct that homophone only in stable matching keys; the raw
+    # transcript remains available for logs and display.
+    normalized = _KRAKEN_HOMOPHONE_RE.sub("kraken", normalized)
+    return _KRAKEN_CURSE_RE.sub("krakens curse", normalized)
 
 
 def routine_text(text: str) -> str:

@@ -63,6 +63,13 @@ class NormalizationTests(unittest.TestCase):
     def test_stable_cache_key_preserves_expected_normalization(self):
         self.assertEqual(stable_text("  What's   UP?!  "), "whats up")
 
+    def test_stable_cache_key_corrects_kraken_homophones(self):
+        self.assertEqual(
+            stable_text("Tell me about the crackin' curse"),
+            "tell me about the krakens curse",
+        )
+        self.assertEqual(stable_text("Who is the cracking?"), "who is the kraken")
+
     def test_routine_normalization_preserves_apostrophes(self):
         self.assertEqual(routine_text(" What's up?! "), "what's up")
 

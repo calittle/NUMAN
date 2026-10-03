@@ -236,6 +236,10 @@ Polly. The JSON printed after each answer identifies the dispatch `source`, any
 | Polly | `Make me a Mai Tai` | Shared structured recipe | `source` is `structured_lookup`; no invented recipe |
 | Either | `Recipe for a Painkiller` | Recipe alias matching | `source` is `structured_lookup` |
 | Grog | `Recommend me something tropical` | Prepared response pool | `source` is `response_pool` |
+| Either | `Tell me about the Kraken's Curse` | Venue origin lore | `source` is `venue_lore` |
+| Either | Say `Tell me about the KRACK-en's Curse` naturally | Kraken recognition and pronunciation | transcript may say `crackin'`, but `source` is `venue_lore`; answer says KRACK-en |
+| Either | `What does the Gift of the Grove do?` | Pactbound story and price | `source` is `venue_lore` |
+| Either | `Recipe for the Chalice of the Forsaken` | Grimoire house recipe | `source` is `structured_lookup`; includes preparation |
 | Grog | `Tell me a tiki tall tale` | Character routine precedence | `source` is `routine` |
 | Grog | `Trigger lightning` | Semantic show routine | `source` is `routine`; `show_actions` contains `lightning` |
 | Polly | `I want a Jet Pilot` | Delayed drink-presentation cue | `source` is `drink_presentation`; cue delay is 120 seconds |
@@ -312,6 +316,7 @@ House recipes live in `data\krakens_curse\recipes.json`:
     {"amount": "1", "unit": "oz", "name": "house rum blend"},
     {"amount": "0.75", "unit": "oz", "name": "fresh lime juice"}
   ],
+  "preparation": "shake with ice and strain over fresh crushed ice",
   "garnish": "mint and a spent lime shell"
 }
 ```
@@ -333,6 +338,11 @@ After every edit, run:
 names. Then test one alias with each bird using `ask`, restart NUMAN, and repeat
 the phrase through the wake-word flow. If validation fails, restore the backup;
 NUMAN will not silently accept malformed knowledge.
+
+The checked-in content is preconfigured from `Krakens_Curse_Grimoire.pdf` with
+17 lore topics and the nine Pactbound drinks. Ask for a drink's `recipe` or
+`ingredients` to hear its build; ask for its `story`, `price`, or `effect` to
+hear the associated pact lore.
 
 ### See microphones
 

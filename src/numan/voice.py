@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -51,6 +52,17 @@ class VoiceProvider(Protocol):
 
 class VoiceProviderError(RuntimeError):
     pass
+
+
+_KRAKEN_PRONUNCIATION_RE = re.compile(r"\bkraken(?P<possessive>['’]s)?\b", re.IGNORECASE)
+
+
+def speech_text(text: str) -> str:
+    """Apply speech-only pronunciations without changing displayed responses."""
+    return _KRAKEN_PRONUNCIATION_RE.sub(
+        lambda match: "Krack-en" + (match.group("possessive") or ""),
+        text,
+    )
 
 
 def tiki_console_filter(
@@ -112,7 +124,7 @@ class EdgeTTSVoiceProvider:
         prompt = stem.with_suffix(".txt")
         raw = stem.with_suffix(".raw.wav")
         output = stem.with_suffix(".wav")
-        prompt.write_text(text, encoding="utf-8")
+        prompt.write_text(speech_text(text), encoding="utf-8")
         try:
             await self._run(
                 *self._edge_tts_command,
@@ -269,7 +281,7 @@ class PiperVoiceProvider(_LocalVoiceProvider):
         )
         with wave.open(str(raw), "wb") as wav_file:
             kwargs = {"syn_config": config} if config is not None else {}
-            self._voices[profile.id].synthesize_wav(text, wav_file, **kwargs)
+            self._voices[profile.id].synthesize_wav(speech_text(text), wav_file, **kwargs)
 
 
 class KokoroVoiceProvider(_LocalVoiceProvider):
@@ -329,7 +341,7 @@ class KokoroVoiceProvider(_LocalVoiceProvider):
         import numpy as np
 
         samples, sample_rate = self._models[profile.id].create(
-            text, voice=profile.voice, speed=profile.speed, lang=profile.language
+            speech_text(text), voice=profile.voice, speed=profile.speed, lang=profile.language
         )
         values = np.asarray(samples)
         if np.issubdtype(values.dtype, np.floating):
@@ -401,7 +413,7 @@ class CachedVoiceProvider:
             raise VoiceProviderError(f"unknown voice profile: {profile_id}") from exc
         digest = hashlib.sha256(
             json.dumps(
-                {"schema": 1, "profile": fingerprint, "text": text},
+                {"schema": 2, "profile": fingerprint, "text": text},
                 sort_keys=True,
                 separators=(",", ":"),
             ).encode("utf-8")

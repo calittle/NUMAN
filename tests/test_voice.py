@@ -14,11 +14,18 @@ from numan.voice import (
     RoutingVoiceProvider,
     VoiceProfile,
     VoiceProviderError,
+    speech_text,
     tiki_console_filter,
 )
 
 
 class VoiceProviderTests(unittest.IsolatedAsyncioTestCase):
+    def test_speech_text_uses_short_a_kraken_pronunciation(self):
+        self.assertEqual(
+            speech_text("Welcome to the Kraken's Curse. Ask the Kraken."),
+            "Welcome to the Krack-en's Curse. Ask the Krack-en.",
+        )
+
     def test_tiki_console_builds_expected_filter(self):
         self.assertEqual(
             tiki_console_filter(
@@ -83,8 +90,11 @@ class VoiceProviderTests(unittest.IsolatedAsyncioTestCase):
         process.terminate.assert_called_once()
 
     async def test_piper_model_is_resident_and_output_is_postprocessed(self):
+        spoken = []
+
         class FakePiper:
             def synthesize_wav(self, text, wav_file, **kwargs):
+                spoken.append(text)
                 wav_file.setnchannels(1)
                 wav_file.setsampwidth(2)
                 wav_file.setframerate(22_050)
@@ -101,9 +111,10 @@ class VoiceProviderTests(unittest.IsolatedAsyncioTestCase):
             Path(args[-1]).write_bytes(b"RIFF-local-piper")
 
         provider._run = AsyncMock(side_effect=fake_ffmpeg)
-        first = await provider.synthesize("Ahoy", "grog")
+        first = await provider.synthesize("The Kraken's Curse", "grog")
         second = await provider.synthesize("Again", "grog")
         self.assertEqual(loads, ["grog"])
+        self.assertEqual(spoken[0], "The Krack-en's Curse")
         self.assertEqual(first.path.read_bytes(), b"RIFF-local-piper")
         first.path.unlink()
         second.path.unlink()

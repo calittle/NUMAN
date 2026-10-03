@@ -20,7 +20,7 @@ use_gpu = false
 endpoint = "https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true"
 api_key_env = "DEEPGRAM_API_KEY"
 language = "en"
-prompt = "Captain Grog, Polly, Mai Tai, Zombie, Painkiller, Jungle Bird, Navy Grog, Planter's Punch, orgeat, falernum, curaçao, demerara rum, tiki cocktails."
+prompt = "The Kraken's Curse, Kraken, Captain Grog, Polly, Mai Tai, Zombie, Painkiller, Jungle Bird, Navy Grog, Planter's Punch, orgeat, falernum, curaçao, demerara rum, tiki cocktails."
 
 [microphone]
 device = "system-default"

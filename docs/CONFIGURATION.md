@@ -303,7 +303,7 @@ host = "127.0.0.1"
 port = 8178
 use_gpu = false
 language = "en"
-prompt = "Captain Grog, Polly, Mai Tai, ..."
+prompt = "The Kraken's Curse, Kraken, Captain Grog, Polly, Mai Tai, ..."
 ```
 
 - `model` is the local Whisper model file.
@@ -315,6 +315,9 @@ prompt = "Captain Grog, Polly, Mai Tai, ..."
 - `language` is the recognition language.
 - `prompt` gives Whisper spellings it should expect. Add unusual drink names,
   character names, or venue terms here, separated by commas.
+- NUMAN also normalizes common `crackin'`/`cracking` transcriptions to `Kraken`
+  for matching, and sends the speech-only spelling `Krack-en` to every TTS
+  backend. Logs, displayed answers, prompts, and lore keep the proper spelling.
 
 `deepgram` is also supported, using `endpoint` and the environment-variable
 name in `api_key_env`. It sends recorded speech to an online service and is an
@@ -431,6 +434,9 @@ Files:
 House specifications are checked first and override a generic drink with the
 same normalized name or alias. Put venue recipes in the Kraken's Curse file so
 upstream reference-data updates do not overwrite Rob's approved builds.
+The optional `preparation` field stores the actual build method and is spoken
+after ingredients and garnish. The checked-in house catalog contains all nine
+Pactbound drinks from `Krakens_Curse_Grimoire.pdf`.
 
 Recipes are shared by all characters and answered before the language model.
 Each recipe has this shape:

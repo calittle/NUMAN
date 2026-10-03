@@ -27,6 +27,7 @@ class CocktailRecipe:
     aliases: tuple[str, ...]
     ingredients: tuple[Ingredient, ...]
     garnish: str | None
+    preparation: str | None
     source: str
 
 
@@ -60,6 +61,9 @@ class JsonCocktailProvider:
             aliases=tuple(str(value) for value in raw.get("aliases", ())),
             ingredients=ingredients,
             garnish=str(raw["garnish"]) if raw.get("garnish") else None,
+            preparation=(
+                str(raw["preparation"]).strip() if raw.get("preparation") else None
+            ),
             source=str(raw["source"]),
         )
 
@@ -109,7 +113,12 @@ def format_recipe(recipe: CocktailRecipe) -> str:
     ]
     ingredients = _join(parts)
     garnish = f", garnished with {recipe.garnish}" if recipe.garnish else ""
-    return f"A {recipe.name} uses {ingredients}{garnish}."
+    preparation = (
+        f" To prepare it, {recipe.preparation[0].casefold()}{recipe.preparation[1:]}."
+        if recipe.preparation else ""
+    )
+    article = "" if stable_text(recipe.name).startswith(("a ", "an ", "the ")) else "A "
+    return f"{article}{recipe.name} uses {ingredients}{garnish}.{preparation}"
 
 
 def _spoken_unit(amount: str, unit: str) -> str:

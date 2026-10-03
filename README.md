@@ -379,6 +379,8 @@ Kraken's Curse-specific lore and recipes live separately in
 the loaded lore IDs and house drinks. Venue lore is character-aware and routes
 before Ollama; house drink specifications route before the generic cocktail
 catalog. Rebuild the voice cache after content changes.
+The initial content pack contains 17 Grimoire-derived lore topics and all nine
+Pactbound cocktail recipes, including preparation methods and source labels.
 
 ## Acknowledgments
 

@@ -1,1 +1,139 @@
-[]
+[
+  {
+    "name": "The Chalice of the Forsaken",
+    "aliases": ["Mai Tai Roa Ae"],
+    "source": "Krakens_Curse_Grimoire.pdf, The Pact of Sister Mairead Solène",
+    "ingredients": [
+      {"amount": "1", "unit": "oz", "name": "Wray & Nephew overproof rum"},
+      {"amount": "1¼", "unit": "oz", "name": "Myers's dark rum"},
+      {"amount": "½", "unit": "oz", "name": "orange curaçao"},
+      {"amount": "½", "unit": "oz", "name": "orgeat syrup"},
+      {"amount": "½", "unit": "oz", "name": "simple syrup"},
+      {"amount": "1", "unit": "oz", "name": "fresh lime juice"}
+    ],
+    "preparation": "shake all ingredients with ice for 10 to 15 seconds, then strain into a double old-fashioned glass over fresh ice",
+    "garnish": "a maraschino cherry, lime wedge, and fresh mint"
+  },
+  {
+    "name": "The Gift of the Grove",
+    "aliases": ["Cranberry Mai Tai"],
+    "source": "Krakens_Curse_Grimoire.pdf, The Pact of Aina of Nalu‘ea",
+    "ingredients": [
+      {"amount": "1", "unit": "oz", "name": "dark Jamaican rum"},
+      {"amount": "1", "unit": "oz", "name": "white Martinique rum"},
+      {"amount": "¾", "unit": "oz", "name": "lime juice"},
+      {"amount": "¾", "unit": "oz", "name": "cranberry syrup"},
+      {"amount": "¼", "unit": "oz", "name": "Cointreau"},
+      {"amount": "¼", "unit": "oz", "name": "orgeat syrup"}
+    ],
+    "preparation": "shake all ingredients with ice and strain into a tall old-fashioned glass filled with crushed ice",
+    "garnish": "a lime wedge and fresh cranberries"
+  },
+  {
+    "name": "A Lover's Return",
+    "aliases": ["Royal Hawaiian Mai Tai"],
+    "source": "Krakens_Curse_Grimoire.pdf, The Pact of Elira, the Widow of the Spring Tide",
+    "ingredients": [
+      {"amount": "1", "unit": "oz", "name": "light rum"},
+      {"amount": "1", "unit": "oz", "name": "dark rum"},
+      {"amount": "1", "unit": "oz", "name": "orange juice"},
+      {"amount": "½", "unit": "oz", "name": "lime juice"},
+      {"amount": "½", "unit": "oz", "name": "orgeat"},
+      {"amount": "¼", "unit": "oz", "name": "orange curaçao"},
+      {"amount": "¼", "unit": "oz", "name": "pineapple juice"}
+    ],
+    "preparation": "shake with ice and strain into a glass over crushed ice",
+    "garnish": "a pineapple wedge and cherry"
+  },
+  {
+    "name": "The Last Man",
+    "aliases": ["Beachbum Berry's Mai Tai Swizzle", "Mai Tai Swizzle"],
+    "source": "Krakens_Curse_Grimoire.pdf, The Pact of Captain Datura, the Forsaken Commander",
+    "ingredients": [
+      {"amount": "¾", "unit": "oz", "name": "lime juice"},
+      {"amount": "1", "unit": "oz", "name": "grapefruit juice"},
+      {"amount": "½", "unit": "oz", "name": "Cointreau"},
+      {"amount": "¼", "unit": "oz", "name": "falernum"},
+      {"amount": "1½", "unit": "oz", "name": "dark Jamaican rum"},
+      {"amount": "1", "unit": "oz", "name": "gold Cuban rum"},
+      {"amount": "⅛", "unit": "tsp", "name": "Pernod"},
+      {"amount": "1", "unit": "dash", "name": "Angostura bitters"}
+    ],
+    "preparation": "shake well with one cup of crushed ice",
+    "garnish": "mint and a lime shell"
+  },
+  {
+    "name": "The Still Path",
+    "aliases": ["Smuggler's Cove Mai Tai"],
+    "source": "Krakens_Curse_Grimoire.pdf, The Pact of Rei Takamura, the Rusted Blade",
+    "ingredients": [
+      {"amount": "2", "unit": "oz", "name": "blended aged rum"},
+      {"amount": "¾", "unit": "oz", "name": "fresh lime juice"},
+      {"amount": "¼", "unit": "oz", "name": "Smuggler's Cove Mai Tai rich simple syrup"},
+      {"amount": "½", "unit": "oz", "name": "dry curaçao"},
+      {"amount": "½", "unit": "oz", "name": "orgeat syrup"}
+    ],
+    "preparation": "shake with 12 ounces of pebble ice and strain into a rocks glass over crushed ice",
+    "garnish": "a spent lime shell and mint sprig"
+  },
+  {
+    "name": "The Moment's Embrace",
+    "aliases": ["Mai Tai Spritz"],
+    "source": "Krakens_Curse_Grimoire.pdf, The Pact of Amara the Seer, Who Looked Away",
+    "ingredients": [
+      {"amount": "1", "unit": "oz", "name": "Jamaican rum"},
+      {"amount": "½", "unit": "oz", "name": "lime juice"},
+      {"amount": "½", "unit": "oz", "name": "orange curaçao"},
+      {"amount": "½", "unit": "oz", "name": "orgeat"},
+      {"amount": "4", "unit": "oz", "name": "sparkling wine"}
+    ],
+    "preparation": "combine everything except the sparkling wine in a shaker and chill, pour into a Collins glass with ice, top with sparkling wine, and stir gently",
+    "garnish": "Luxardo cherries"
+  },
+  {
+    "name": "The Kraken's Curse",
+    "aliases": ["Kraken's Curse cocktail", "Bitter Mai Tai"],
+    "source": "Krakens_Curse_Grimoire.pdf, The Pact of Captain Tiber Malvayne, the Bound Steward of the Deep",
+    "ingredients": [
+      {"amount": "1¼", "unit": "oz", "name": "Campari"},
+      {"amount": "¾", "unit": "oz", "name": "Jamaican rum"},
+      {"amount": "¾", "unit": "oz", "name": "lime juice"},
+      {"amount": "¾", "unit": "oz", "name": "orgeat"},
+      {"amount": "½", "unit": "oz", "name": "dry curaçao"},
+      {"amount": "¼", "unit": "oz", "name": "Becherovka"},
+      {"amount": "¼", "unit": "oz", "name": "demerara syrup"}
+    ],
+    "preparation": "flash-blend with ice for 5 seconds, pour into a glass, and top with pebble ice",
+    "garnish": "mint and orange peel"
+  },
+  {
+    "name": "The Bitter Reprieve",
+    "aliases": ["Angostura Mai Tai"],
+    "source": "Krakens_Curse_Grimoire.pdf, The Pact of Lord Marik, the Butcher King",
+    "ingredients": [
+      {"amount": "1⅓", "unit": "oz", "name": "white rum"},
+      {"amount": "⅔", "unit": "oz", "name": "Cointreau"},
+      {"amount": "1", "unit": "oz", "name": "lime juice"},
+      {"amount": "⅔", "unit": "oz", "name": "orgeat syrup"},
+      {"amount": "⅓", "unit": "oz", "name": "dark Jamaican rum"},
+      {"amount": "2", "unit": "dash", "name": "Angostura bitters"}
+    ],
+    "preparation": "shake everything except the dark rum and bitters, strain over ice, then float the dark rum and bitters",
+    "garnish": "mint and dehydrated lime"
+  },
+  {
+    "name": "The Maelstrom's Fury",
+    "aliases": ["Disgruntled Mai Tai"],
+    "source": "Krakens_Curse_Grimoire.pdf, The Pact of Seraphine of the Drowned Tongue",
+    "ingredients": [
+      {"amount": "1", "unit": "oz", "name": "overproof Jamaican rum"},
+      {"amount": "1", "unit": "oz", "name": "Aperol"},
+      {"amount": "1", "unit": "oz", "name": "lime juice"},
+      {"amount": "½", "unit": "oz", "name": "orange curaçao"},
+      {"amount": "½", "unit": "oz", "name": "orgeat"},
+      {"amount": "⅔", "unit": "oz", "name": "Underberg"}
+    ],
+    "preparation": "shake all ingredients and strain into a glass with crushed ice",
+    "garnish": "mint and lime"
+  }
+]

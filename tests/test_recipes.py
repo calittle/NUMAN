@@ -23,6 +23,16 @@ class RecipeProviderTests(unittest.IsolatedAsyncioTestCase):
         provider = JsonCocktailProvider(PROJECT_ROOT / "data/cocktails/recipes.json")
         self.assertIsNone(await provider.lookup("banana surprise", TEST_GROG))
 
+    async def test_grimoire_catalog_contains_nine_preparation_complete_drinks(self):
+        provider = JsonCocktailProvider(
+            PROJECT_ROOT / "data/krakens_curse/recipes.json"
+        )
+        self.assertEqual(len(provider.recipes), 9)
+        self.assertTrue(all(recipe.preparation for recipe in provider.recipes))
+        result = await provider.lookup("Chalice of the Forsaken", TEST_GROG)
+        self.assertIn("Wray & Nephew", result)
+        self.assertIn("To prepare it, shake", result)
+
     async def test_house_recipe_overrides_reference_recipe(self):
         house = [{
             "name": "Mai Tai", "aliases": [], "source": "Kraken's Curse",

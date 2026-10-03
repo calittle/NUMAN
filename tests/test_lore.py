@@ -21,8 +21,8 @@ class LoreTests(unittest.IsolatedAsyncioTestCase):
             "polly-dev",
         )
         self.assertEqual(result.plan.source, ResponseSource.VENUE_LORE)
-        self.assertIn("our tiki bar", result.plan.text)
-        self.assertEqual(result.plan.metadata["lore_id"], "about_the_bar")
+        self.assertIn("unmapped island", result.plan.text)
+        self.assertEqual(result.plan.metadata["lore_id"], "legend_of_the_bar")
 
     def test_duplicate_aliases_are_rejected(self):
         entries = [
