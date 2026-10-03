@@ -15,7 +15,9 @@ from numan.engine.rules import (
     ProviderStructuredLookupRule,
     RepositoryExactCacheRule,
     RepositoryResponsePoolRule,
+    VenueLoreRule,
 )
+from numan.lore import JsonLoreProvider
 from numan.show_control import DrinkPresentationCatalog, DrinkPresentationRule
 
 
@@ -25,6 +27,7 @@ def build_character_dispatcher(
     exact_cache: ExactCacheRepository,
     response_pools: ResponsePoolRepository,
     structured_data: StructuredDataProvider,
+    venue_lore: JsonLoreProvider | None = None,
     llm: LLMProvider,
     conversations: InMemoryConversationStore | None = None,
     drink_presentations: DrinkPresentationCatalog | None = None,
@@ -35,9 +38,13 @@ def build_character_dispatcher(
         CharacterRoutineRule(policy, response_pools, **keyword),
         RepositoryExactCacheRule(exact_cache),
         RepositoryResponsePoolRule(response_pools, **keyword),
+    ]
+    if venue_lore is not None:
+        rules.append(VenueLoreRule(venue_lore))
+    rules.extend((
         ProviderStructuredLookupRule(structured_data),
         ProviderLLMFallbackRule(llm, conversations),
-    ]
+    ))
     if drink_presentations is not None:
         rules.insert(0, DrinkPresentationRule(drink_presentations, **keyword))
     return Dispatcher(rules)

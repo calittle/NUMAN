@@ -215,6 +215,47 @@ work.
 
 Open a terminal in the NUMAN folder before using these commands.
 
+### End-to-end phrase checklist
+
+Start the complete runtime with:
+
+```powershell
+.\.venv\Scripts\numan.exe wake run --live
+```
+
+For every row, say the wake phrase first, wait for the wake acknowledgment,
+then say the test phrase. Use `Hey Captain Grog` for Grog and `Hey Polly` for
+Polly. The JSON printed after each answer identifies the dispatch `source`, any
+`show_actions`, and the stage timings.
+
+| Character | Say this after the wake phrase | Function exercised | Expected result |
+| --- | --- | --- | --- |
+| Grog | `Hello there` | Prepared routine | `source` is `routine`; no Ollama timing |
+| Polly | `Who are you?` | Exact response cache | `source` is `exact_cache` |
+| Grog | `What's in a Mai Tai?` | Character-specific drink cache | `source` is `exact_cache` |
+| Polly | `Make me a Mai Tai` | Shared structured recipe | `source` is `structured_lookup`; no invented recipe |
+| Either | `Recipe for a Painkiller` | Recipe alias matching | `source` is `structured_lookup` |
+| Grog | `Recommend me something tropical` | Prepared response pool | `source` is `response_pool` |
+| Grog | `Tell me a tiki tall tale` | Character routine precedence | `source` is `routine` |
+| Grog | `Trigger lightning` | Semantic show routine | `source` is `routine`; `show_actions` contains `lightning` |
+| Polly | `I want a Jet Pilot` | Delayed drink-presentation cue | `source` is `drink_presentation`; cue delay is 120 seconds |
+| Polly | `I'm serving a Jet Pilot` | Immediate drink-presentation cue | `source` is `drink_presentation`; cue delay is zero |
+| Either | `What do parrots dream about?` | Local Ollama fallback and streaming | `source` is `llm_fallback`; LLM timings are nonzero |
+
+With fake show control, show phrases report the intended cue without operating
+lighting hardware. Do not run real show-action tests until the venue is ready
+for the configured effect.
+
+For a room-noise test, run the checklist once in a quiet room and once with the
+normal HVAC, music, and crowd bed present. After each question,
+`capture_tail_ms` should normally remain near the configured 750 ms and
+`time_to_first_audio_ms` should not grow by several seconds. A brief clap or
+dropped object may extend capture; steady background sound should not.
+
+Use `playback_ms` only as the duration of the spoken answer. Compare
+`time_to_first_audio_ms` when judging responsiveness, because `total_ms`
+includes the entire answer playback.
+
 ### Test Captain Grog without the microphone
 
 ```powershell
@@ -226,6 +267,72 @@ Open a terminal in the NUMAN folder before using these commands.
 ```powershell
 .\.venv\Scripts\numan.exe ask --character polly --live "Hello"
 ```
+
+## Loading Kraken's Curse lore and house recipes
+
+Rob can add venue facts and bar-specific drink specifications without editing
+Python or changing the character prompts. Stop NUMAN before editing these files.
+Make a `.backup` copy first, use a plain-text editor, and preserve JSON commas,
+quotes, square brackets, and braces.
+
+Venue lore lives in `data\krakens_curse\lore.json`. Each entry has several
+ways a guest might ask, plus an optional distinct answer for each bird:
+
+```json
+{
+  "id": "why_the_bell_is_cracked",
+  "aliases": [
+    "why is the bell cracked",
+    "tell me about the cracked bell",
+    "what happened to the bell"
+  ],
+  "source": "Kraken's Curse house lore, approved by Rob",
+  "responses": {
+    "grog": "Grog's short in-character answer.",
+    "polly": "Polly's short in-character answer."
+  }
+}
+```
+
+Use stable facts only. `id` must be unique. Aliases must be unique after
+capitalization and punctuation are ignored. Response keys may be `grog`,
+`polly`, or `default`; `default` is used when a character-specific answer is
+not supplied. Keep responses concise and ready to speak—lore answers bypass
+Ollama and are not rewritten.
+
+House recipes live in `data\krakens_curse\recipes.json`:
+
+```json
+{
+  "name": "House Mai Tai",
+  "aliases": ["Kraken's Mai Tai", "Kraken Mai Tai"],
+  "source": "Kraken's Curse house recipe, approved by Rob",
+  "ingredients": [
+    {"amount": "1", "unit": "oz", "name": "aged Jamaican rum"},
+    {"amount": "1", "unit": "oz", "name": "house rum blend"},
+    {"amount": "0.75", "unit": "oz", "name": "fresh lime juice"}
+  ],
+  "garnish": "mint and a spent lime shell"
+}
+```
+
+Entries go inside the file's outer JSON list, separated by commas. A house
+recipe with the same name or alias as a reference recipe takes precedence, so
+Rob can encode the bar's actual build without modifying the generic catalog.
+Use the recipe card or another authoritative house source in `source`; do not
+guess measurements.
+
+After every edit, run:
+
+```powershell
+.\.venv\Scripts\numan.exe knowledge status
+.\.venv\Scripts\numan.exe voice cache build
+```
+
+`knowledge status` must report `"valid": true` and list the new IDs or recipe
+names. Then test one alias with each bird using `ask`, restart NUMAN, and repeat
+the phrase through the wake-word flow. If validation fails, restore the backup;
+NUMAN will not silently accept malformed knowledge.
 
 ### See microphones
 
@@ -295,6 +402,9 @@ end_silence_ms = 750
 
 `end_silence_ms` controls how long NUMAN waits after the last detected speech.
 Keep the 750 ms default unless normal pauses are being clipped.
+NUMAN automatically adapts to steady room noise. If capture still remains open,
+move the microphone away from speakers or intermittent clatter before increasing
+or decreasing this value.
 
 Each bird has an audio route. During initial setup both can use the normal
 Windows speaker. Once dedicated USB audio adapters are connected, Andy will

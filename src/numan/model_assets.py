@@ -35,6 +35,20 @@ VOICE_MODEL_ASSETS = (
         "c0f0d124e5895c00e7c03b35dcc8287f319a6998a365b182deb5c8e752ee8c1e",
     ),
     VoiceModelAsset(
+        "piper",
+        "models/tts/piper/en_US-lessac-medium.onnx",
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/"
+        "en/en_US/lessac/medium/en_US-lessac-medium.onnx?download=true",
+        "5efe09e69902187827af646e1a6e9d269dee769f9877d17b16b1b46eeaaf019f",
+    ),
+    VoiceModelAsset(
+        "piper",
+        "models/tts/piper/en_US-lessac-medium.onnx.json",
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/"
+        "en/en_US/lessac/medium/en_US-lessac-medium.onnx.json?download=true",
+        "efe19c417bed055f2d69908248c6ba650fa135bc868b0e6abb3da181dab690a0",
+    ),
+    VoiceModelAsset(
         "kokoro",
         "models/tts/kokoro/kokoro-v1.0.onnx",
         "https://github.com/thewh1teagle/kokoro-onnx/releases/download/"

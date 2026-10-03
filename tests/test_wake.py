@@ -170,6 +170,23 @@ class SpeechCaptureTests(unittest.TestCase):
         self.assertIsNone(capture.feed(background))
         self.assertIsNotNone(capture.feed(background))
 
+    def test_steady_room_noise_is_learned_as_silence(self):
+        capture = SpeechCapture(
+            initial_noise_floor=300,
+            end_silence_s=0.064,
+            retained_silence_s=0.032,
+        )
+        room_noise = np.full(512, 300, dtype=np.int16).tobytes()
+        speech = np.full(512, 1000, dtype=np.int16).tobytes()
+        self.assertIsNone(capture.feed(room_noise))
+        self.assertFalse(capture.speech_started)
+        self.assertIsNone(capture.feed(speech))
+        self.assertTrue(capture.speech_started)
+        self.assertIsNone(capture.feed(room_noise))
+        result = capture.feed(room_noise)
+        self.assertIsNotNone(result)
+        self.assertEqual(capture.trailing_silence_ms, 64.0)
+
     def test_expires_when_no_question_follows_wake(self):
         capture = SpeechCapture(start_timeout_s=0.064)
         silence = np.zeros(512, dtype=np.int16).tobytes()

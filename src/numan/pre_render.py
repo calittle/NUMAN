@@ -6,13 +6,18 @@ import json
 from pathlib import Path
 
 from .performance import GROG_STALLING_PLAN, POLLY_STALLING_PLAN
-from .recipes import JsonCocktailProvider
+from .lore import JsonLoreProvider
+from .recipes import JsonCocktailProvider, LayeredCocktailProvider
 from .show_control import DrinkPresentationCatalog
 from .voice import VoiceProvider
 
 
 def deterministic_responses(project_root: Path) -> dict[str, tuple[str, ...]]:
-    recipes = JsonCocktailProvider(project_root / "data/cocktails/recipes.json").responses()
+    recipes = LayeredCocktailProvider(
+        JsonCocktailProvider(project_root / "data/krakens_curse/recipes.json"),
+        JsonCocktailProvider(project_root / "data/cocktails/recipes.json"),
+    ).responses()
+    lore = JsonLoreProvider(project_root / "data/krakens_curse/lore.json")
     presentations = DrinkPresentationCatalog(
         project_root / "data/show/drink_presentations.json"
     )
@@ -20,6 +25,7 @@ def deterministic_responses(project_root: Path) -> dict[str, tuple[str, ...]]:
     results = {}
     for character_id in stalling:
         values = set(recipes)
+        values.update(lore.responses(character_id))
         values.update(_object_values(project_root / f"data/{character_id}/exact_cache.json"))
         values.update(_pool_values(project_root / f"data/{character_id}/response_pools.json"))
         for presentation in presentations.items:

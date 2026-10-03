@@ -14,6 +14,7 @@ class ResponseSource(StrEnum):
     ROUTINE = "routine"
     EXACT_CACHE = "exact_cache"
     RESPONSE_POOL = "response_pool"
+    VENUE_LORE = "venue_lore"
     STRUCTURED_LOOKUP = "structured_lookup"
     LLM_FALLBACK = "llm_fallback"
 

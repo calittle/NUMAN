@@ -25,7 +25,8 @@ from .engine.providers import (
 from .engine.repositories import JsonExactCache, JsonResponsePools
 from .orchestration import Orchestrator
 from .performance import GROG_STALLING_PLAN, POLLY_STALLING_PLAN
-from .recipes import JsonCocktailProvider
+from .lore import JsonLoreProvider
+from .recipes import JsonCocktailProvider, LayeredCocktailProvider
 from .show_control import (
     DrinkPresentationCatalog,
     FakeLightORamaProvider,
@@ -178,8 +179,19 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
     if unsupported:
         names = ", ".join(sorted(unsupported))
         raise ConfigurationError(f"no dispatch policy configured for: {names}")
-    structured_data = JsonCocktailProvider(
-        PROJECT_ROOT / "data/cocktails/recipes.json"
+    venue_lore = JsonLoreProvider(
+        PROJECT_ROOT / "data/krakens_curse/lore.json"
+    )
+    for entry in venue_lore.entries:
+        unknown = set(entry.responses) - set(characters) - {"default"}
+        if unknown:
+            raise ConfigurationError(
+                f"lore {entry.id!r} has responses for unknown characters: "
+                + ", ".join(sorted(unknown))
+            )
+    structured_data = LayeredCocktailProvider(
+        JsonCocktailProvider(PROJECT_ROOT / "data/krakens_curse/recipes.json"),
+        JsonCocktailProvider(PROJECT_ROOT / "data/cocktails/recipes.json"),
     )
     drink_presentations = DrinkPresentationCatalog(
         PROJECT_ROOT / "data/show/drink_presentations.json"
@@ -211,6 +223,7 @@ def build_application(config: NumanConfig, *, live: bool) -> Application:
                 PROJECT_ROOT / f"data/{character_id}/response_pools.json"
             ),
             structured_data=structured_data,
+            venue_lore=venue_lore,
             llm=llm_provider,
             conversations=conversations,
             drink_presentations=drink_presentations,

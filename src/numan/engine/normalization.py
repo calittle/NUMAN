@@ -18,6 +18,8 @@ _DRINK_ALIASES = {
 }
 
 _DRINK_QUERY_FORMS = (
+    re.compile(r"\b(?:make|mix|build)(?:\s+me)?\s+(?:a|an|the)\s+(?P<drink>.+)$"),
+    re.compile(r"\bi(?: would|'d)?\s+like\s+(?:a|an|the)\s+(?P<drink>.+)$"),
     re.compile(r"\bwhat(?:'s| is)?\s+in\s+a\s+(?P<drink>.+)$"),
     re.compile(r"\bwhat(?:'s|s| is)\s+a\s+(?P<drink>.+)$"),
     re.compile(r"\bwhat\s+a\s+(?P<drink>.+)$"),

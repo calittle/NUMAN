@@ -27,7 +27,9 @@ from .devices import list_audio_inputs, list_audio_outputs, resolve_input_device
 from .engine.models import Utterance
 from .engine.providers import LLMProviderError, OllamaConfig, OllamaLLMProvider
 from .model_assets import install_voice_models, verify_voice_models
+from .lore import JsonLoreProvider, LoreFormatError
 from .pre_render import deterministic_responses, pre_render_responses
+from .recipes import JsonCocktailProvider, RecipeFormatError
 from .transcription import MicrophoneRecorder, TranscriptionError
 from .voice import default_voice_cache_dir
 from .wake import (
@@ -64,6 +66,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     show = subparsers.add_parser("show", help="inspect semantic show control")
     show.add_subparsers(dest="show_command", required=True).add_parser("status")
+
+    knowledge = subparsers.add_parser(
+        "knowledge", help="validate Kraken's Curse lore and house recipes"
+    )
+    knowledge.add_subparsers(
+        dest="knowledge_command", required=True
+    ).add_parser("status")
 
     voice = subparsers.add_parser("voice", help="manage local voice models")
     voice_commands = voice.add_subparsers(dest="voice_command", required=True)
@@ -188,6 +197,7 @@ async def _perform_question(args, question: str) -> int:
             for item in result.dispatch_trace.attempts
         ],
         "timings": {
+            "capture_tail_ms": result.timings.capture_tail_ms,
             "transcription_ms": result.timings.transcription_ms,
             "dispatch_ms": result.timings.dispatch_ms,
             "llm_first_token_ms": result.timings.llm_first_token_ms,
@@ -195,6 +205,7 @@ async def _perform_question(args, question: str) -> int:
             "synthesis_ms": result.timings.synthesis_ms,
             "queue_wait_ms": result.timings.queue_wait_ms,
             "answer_start_ms": result.timings.answer_start_ms,
+            "time_to_first_audio_ms": result.timings.time_to_first_audio_ms,
             "playback_ms": result.timings.playback_ms,
             "total_ms": result.timings.total_ms,
         },
@@ -277,6 +288,22 @@ def _voice_models(command: str, provider: str) -> int:
     ready = all(item["valid"] for item in results)
     print(json.dumps({"ready": ready, "installed": installed, "models": results}, indent=2))
     return 0 if ready else 1
+
+
+def _knowledge_status() -> int:
+    lore_path = PROJECT_ROOT / "data/krakens_curse/lore.json"
+    recipes_path = PROJECT_ROOT / "data/krakens_curse/recipes.json"
+    lore = JsonLoreProvider(lore_path)
+    recipes = JsonCocktailProvider(recipes_path)
+    print(json.dumps({
+        "valid": True,
+        "lore_file": str(lore_path),
+        "lore_entries": [entry.id for entry in lore.entries],
+        "recipe_file": str(recipes_path),
+        "house_recipes": [recipe.name for recipe in recipes.recipes],
+        "house_recipes_override_reference_catalog": True,
+    }, indent=2))
+    return 0
 
 
 async def _voice_cache(command: str, config_path: Path) -> int:
@@ -377,7 +404,7 @@ async def _wake(args) -> int:
         stt_provider = build_stt_provider(config)
         loop = asyncio.get_running_loop()
 
-        async def answer(target, audio):
+        async def answer(target, audio, capture_tail_ms):
             character = application.characters[target.character_id]
             transcript = ""
 
@@ -389,17 +416,20 @@ async def _wake(args) -> int:
             result = await application.orchestrator.perform_audio(
                 audio, stt_provider.transcribe, character, target.actor_id,
                 f"wake-{target.id}", on_transcript=report_transcript,
+                capture_tail_ms=capture_tail_ms,
             )
             print(json.dumps({
                 "wake_target": target.id,
                 "transcript": transcript,
                 "character": target.character_id,
                 "actor": target.actor_id,
+                "route": result.route_id,
                 "source": result.plan.source.value,
                 "response": result.plan.text,
                 "played": result.played,
                 "stall_played": result.stall_played,
                 "timings": {
+                    "capture_tail_ms": result.timings.capture_tail_ms,
                     "transcription_ms": result.timings.transcription_ms,
                     "dispatch_ms": result.timings.dispatch_ms,
                     "llm_first_token_ms": result.timings.llm_first_token_ms,
@@ -407,6 +437,7 @@ async def _wake(args) -> int:
                     "synthesis_ms": result.timings.synthesis_ms,
                     "queue_wait_ms": result.timings.queue_wait_ms,
                     "answer_start_ms": result.timings.answer_start_ms,
+                    "time_to_first_audio_ms": result.timings.time_to_first_audio_ms,
                     "playback_ms": result.timings.playback_ms,
                     "total_ms": result.timings.total_ms,
                 },
@@ -428,8 +459,10 @@ async def _wake(args) -> int:
                 ],
             }, indent=2), flush=True)
 
-        def submit_query(target, audio):
-            asyncio.run_coroutine_threadsafe(answer(target, audio), loop).result()
+        def submit_query(target, audio, capture_tail_ms):
+            asyncio.run_coroutine_threadsafe(
+                answer(target, audio, capture_tail_ms), loop
+            ).result()
 
         on_query = submit_query
     try:
@@ -606,6 +639,8 @@ def main(argv=None) -> int:
             return asyncio.run(_stt_status(args.config))
         if args.command == "show":
             return _show_status(args.config)
+        if args.command == "knowledge":
+            return _knowledge_status()
         if args.command == "voice":
             if args.voice_command == "models":
                 return _voice_models(args.voice_models_command, args.provider)
@@ -625,6 +660,8 @@ def main(argv=None) -> int:
         LookupError,
         RuntimeError,
         WakeError,
+        LoreFormatError,
+        RecipeFormatError,
     ) as exc:
         print(f"error: {exc}")
         return 2

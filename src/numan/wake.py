@@ -185,6 +185,10 @@ class SpeechCapture:
         end_silence_s: float = 0.75,
         max_duration_s: float = 15.0,
         pre_roll_s: float = 0.25,
+        initial_noise_floor: float = 0.0,
+        noise_ratio: float = 1.8,
+        noise_margin: float = 40.0,
+        retained_silence_s: float = 0.16,
     ) -> None:
         self.sample_rate = sample_rate
         self.frame_samples = frame_samples
@@ -193,11 +197,18 @@ class SpeechCapture:
         self.silence_limit = int(end_silence_s * sample_rate / frame_samples)
         self.max_frames = int(max_duration_s * sample_rate / frame_samples)
         self.pre_roll = deque(maxlen=max(1, int(pre_roll_s * sample_rate / frame_samples)))
+        self.retained_silence_frames = max(
+            1, int(retained_silence_s * sample_rate / frame_samples)
+        )
+        self.noise_floor = max(0.0, initial_noise_floor)
+        self.noise_ratio = noise_ratio
+        self.noise_margin = noise_margin
         self.frames: list[bytes] = []
         self.total_frames = 0
         self.silence_frames = 0
         self.speech_started = False
         self.expired = False
+        self.trailing_silence_ms = 0.0
 
     def feed(self, frame: bytes) -> bytes | None:
         import numpy as np
@@ -205,7 +216,11 @@ class SpeechCapture:
         self.total_frames += 1
         samples = np.frombuffer(frame, dtype=np.int16).astype(np.float32)
         rms = float(np.sqrt(np.mean(samples * samples))) if len(samples) else 0.0
-        speaking = rms >= self.speech_threshold
+        adaptive_threshold = max(
+            self.speech_threshold,
+            self.noise_floor * self.noise_ratio + self.noise_margin,
+        )
+        speaking = rms >= adaptive_threshold
         if not self.speech_started:
             self.pre_roll.append(frame)
             if speaking:
@@ -214,13 +229,31 @@ class SpeechCapture:
                 self.pre_roll.clear()
             elif self.total_frames >= self.start_limit:
                 self.expired = True
+            else:
+                self._observe_background(rms)
             return None
 
         self.frames.append(frame)
         self.silence_frames = 0 if speaking else self.silence_frames + 1
+        if not speaking:
+            self._observe_background(rms)
         if self.silence_frames >= self.silence_limit or self.total_frames >= self.max_frames:
-            return b"".join(self.frames)
+            self.trailing_silence_ms = (
+                self.silence_frames * self.frame_samples * 1_000 / self.sample_rate
+            )
+            removable = max(0, self.silence_frames - self.retained_silence_frames)
+            retained = self.frames[:-removable] if removable else self.frames
+            return b"".join(retained)
         return None
+
+    def _observe_background(self, rms: float) -> None:
+        if self.noise_floor <= 0:
+            self.noise_floor = rms
+            return
+        # Follow a quieter room quickly, but let louder steady noise raise the
+        # floor slowly so a voice or brief clatter cannot redefine "silence".
+        weight = 0.2 if rms < self.noise_floor else 0.02
+        self.noise_floor += weight * (rms - self.noise_floor)
 
 
 def write_capture_wav(pcm: bytes, sample_rate: int = 16_000) -> Path:
@@ -247,6 +280,7 @@ class WakeListener:
         self.registry = registry
         self.microphone_device = microphone_device
         self.end_silence_s = end_silence_s
+        self.ambient_rms = 0.0
         self._stop = threading.Event()
 
     def stop(self) -> None:
@@ -304,7 +338,9 @@ class WakeListener:
                             audio = write_capture_wav(pcm)
                             try:
                                 if on_query is not None:
-                                    on_query(active_target, audio)
+                                    on_query(
+                                        active_target, audio, capture.trailing_silence_ms
+                                    )
                             finally:
                                 audio.unlink(missing_ok=True)
                             capture = None
@@ -326,6 +362,15 @@ class WakeListener:
                         active_target = self.registry.resolve(detected)
                         on_wake(active_target)
                         if on_query is not None:
-                            capture = SpeechCapture(end_silence_s=self.end_silence_s)
+                            capture = SpeechCapture(
+                                end_silence_s=self.end_silence_s,
+                                initial_noise_floor=self.ambient_rms,
+                            )
                         pending.clear()
                         break
+                    samples = np.frombuffer(frame, dtype=np.int16).astype(np.float32)
+                    rms = float(np.sqrt(np.mean(samples * samples))) if len(samples) else 0.0
+                    weight = 0.2 if rms < self.ambient_rms else 0.01
+                    self.ambient_rms = (
+                        rms if self.ambient_rms <= 0 else self.ambient_rms + weight * (rms - self.ambient_rms)
+                    )

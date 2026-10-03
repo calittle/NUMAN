@@ -1,0 +1,16 @@
+[
+  {
+    "id": "about_the_bar",
+    "aliases": [
+      "what is the krakens curse",
+      "tell me about the krakens curse",
+      "where do you work",
+      "what is this bar"
+    ],
+    "source": "Kraken's Curse house lore",
+    "responses": {
+      "grog": "The Kraken's Curse is a tiki bar with strong rum, strange weather, and standards just low enough to let you in.",
+      "polly": "The Kraken's Curse is our tiki bar: equal parts tropical refuge, theatrical trouble, and very good rum."
+    }
+  }
+]

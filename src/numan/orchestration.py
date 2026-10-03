@@ -26,6 +26,7 @@ from .performance import StallingPlan
 
 @dataclass(frozen=True, slots=True)
 class PerformanceTimings:
+    capture_tail_ms: float
     transcription_ms: float
     dispatch_ms: float
     llm_first_token_ms: float
@@ -33,6 +34,7 @@ class PerformanceTimings:
     synthesis_ms: float
     queue_wait_ms: float
     answer_start_ms: float
+    time_to_first_audio_ms: float
     playback_ms: float
     total_ms: float
 
@@ -97,6 +99,7 @@ class Orchestrator:
         actor_id: str,
         conversation_id: str,
         on_transcript: Callable[[str], None] | None = None,
+        capture_tail_ms: float = 0.0,
     ) -> PerformanceResult:
         """Cover transcription with one cached opener, then queue the answer."""
         started = perf_counter_ns()
@@ -122,8 +125,13 @@ class Orchestrator:
                 result,
                 timings=replace(
                     result.timings,
+                    capture_tail_ms=capture_tail_ms,
                     transcription_ms=transcription_ms,
                     answer_start_ms=transcription_ms + result.timings.answer_start_ms,
+                    time_to_first_audio_ms=(
+                        capture_tail_ms + transcription_ms
+                        + result.timings.answer_start_ms
+                    ),
                     total_ms=_elapsed(started),
                 ),
             )
@@ -192,6 +200,7 @@ class Orchestrator:
                 stall_played=streamed["stall_played"],
                 scheduled_actions=(),
                 timings=PerformanceTimings(
+                    capture_tail_ms=0.0,
                     transcription_ms=0.0,
                     dispatch_ms=dispatch_ms,
                     llm_first_token_ms=streamed["llm_first_token_ms"],
@@ -199,6 +208,7 @@ class Orchestrator:
                     synthesis_ms=streamed["synthesis_ms"],
                     queue_wait_ms=streamed["queue_wait_ms"],
                     answer_start_ms=streamed["answer_start_ms"],
+                    time_to_first_audio_ms=streamed["answer_start_ms"],
                     playback_ms=streamed["playback_ms"],
                     total_ms=_elapsed(started),
                 ),
@@ -248,6 +258,7 @@ class Orchestrator:
             stall_played=stall_played,
             scheduled_actions=tuple(scheduled_actions),
             timings=PerformanceTimings(
+                capture_tail_ms=0.0,
                 transcription_ms=0.0,
                 dispatch_ms=dispatch_ms,
                 llm_first_token_ms=0.0,
@@ -255,6 +266,7 @@ class Orchestrator:
                 synthesis_ms=synthesis_ms,
                 queue_wait_ms=playback.queue_wait_ms,
                 answer_start_ms=playback_requested_ms + playback.queue_wait_ms,
+                time_to_first_audio_ms=playback_requested_ms + playback.queue_wait_ms,
                 playback_ms=playback_ms,
                 total_ms=_elapsed(started),
             ),

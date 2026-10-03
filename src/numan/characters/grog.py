@@ -40,7 +40,7 @@ GROG_DISPATCH_POLICY = CharacterDispatchPolicy(
         ),
         RoutinePolicy(
             "make_me",
-            _pattern(r"make me (?:(?:a|an) )?(?P<thing>.+)$"),
+            _pattern(r"(?:turn|transform) me into (?:(?:a|an) )?(?P<thing>.+)$"),
             response_template="A flash of rum-soaked magic, and now you're a {thing}.",
         ),
         RoutinePolicy(

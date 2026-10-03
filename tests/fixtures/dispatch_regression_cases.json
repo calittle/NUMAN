@@ -1,6 +1,6 @@
 [
   {"question": "Hello, what's in a mai tai?", "expected": "routine", "note": "greeting wins over drink cache"},
-  {"question": "Make me a mai tai", "expected": "routine", "note": "make-me routine wins over cached drink name"},
+  {"question": "Make me a mai tai", "expected": "exact_cache", "note": "drink request wins over transformation wordplay"},
   {"question": "What's in a mai tai?", "expected": "exact_cache"},
   {"question": "recommend me something tropical", "expected": "response_pool"},
   {"question": "recipe for a painkiller", "expected": "structured_lookup"},

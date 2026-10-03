@@ -156,6 +156,10 @@ history, and logical audio routes. Both development routes currently use the
 system-default device; assign each route a `sounddevice` selector when the
 physical birds have separate outputs.
 
+Both characters are grounded as sentient macaws who work behind the bar at The
+Kraken's Curse. Their language-model prompts preserve avian anatomy and identity
+while their separate personality instructions control how each bird speaks.
+
 Selecting a character automatically selects its sole configured actor:
 
 ```bash
@@ -340,6 +344,22 @@ target's character and actor, and discards microphone input while the answer
 is generated and played so the actor cannot wake itself.
 The default trailing-silence window is 750 ms and is configurable with
 `microphone.end_silence_ms`.
+The listener continuously learns the room's ambient level and uses an adaptive
+speech threshold, so steady fans, music bleed, and HVAC noise do not keep a
+question open merely because they exceed a fixed volume. It retains a short
+speech hangover but trims the rest of the trailing silence before Whisper.
+
+Latency output separates `capture_tail_ms`, `transcription_ms`,
+`llm_first_token_ms`, `synthesis_ms`, `time_to_first_audio_ms`, and the duration
+spent playing audio. `time_to_first_audio_ms` is the useful perceived-response
+metric; `total_ms` includes the answer's full speaking duration.
+
+For an end-to-end exercise, try `Hello there`, `Who are you?`, `Make me a Mai
+Tai`, `Recommend me something tropical`, `Trigger lightning`, `I want a Jet
+Pilot`, and `What do parrots dream about?`. These cover prepared routines,
+exact caches, structured recipes, response pools, show intents, drink cues, and
+local Ollama fallback. The expected source and timing checks for each phrase are
+listed in `docs/ROB-GUIDE.md` under **End-to-end phrase checklist**.
 
 ## Cocktail knowledge
 
@@ -353,6 +373,12 @@ alias resolution live in `numan.recipes`. The initial specifications use the
 International Bartenders Association list and Pusser's published Painkiller
 formula. This provider can later be replaced or augmented by Kapu Tracker
 without changing dispatch or orchestration.
+
+Kraken's Curse-specific lore and recipes live separately in
+`data/krakens_curse/`. `numan knowledge status` validates Rob's edits and lists
+the loaded lore IDs and house drinks. Venue lore is character-aware and routes
+before Ollama; house drink specifications route before the generic cocktail
+catalog. Rebuild the voice cache after content changes.
 
 ## Acknowledgments
 

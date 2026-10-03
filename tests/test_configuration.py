@@ -26,9 +26,20 @@ class ConfigurationTests(unittest.TestCase):
         )
         self.assertEqual(config.voices["polly-kokoro-sarah-bright"].provider, "kokoro")
         self.assertEqual(
-            config.voices["polly-kokoro-sarah-bright"].tiki_console.coconut_radio_bits,
+            config.voices["polly-piper-lessac-bright"].tiki_console.coconut_radio_bits,
             11,
         )
+        self.assertEqual(config.characters["polly"].voice_profile, "polly-piper-lessac-bright")
+        self.assertEqual(config.voices["polly-piper-lessac-bright"].provider, "piper")
+        for character in config.characters.values():
+            prompt = character.system_prompt.casefold()
+            self.assertIn("sentient", prompt)
+            self.assertIn("macaw", prompt)
+            self.assertIn("the kraken's curse", prompt)
+            self.assertIn("feathers", prompt)
+            self.assertIn("wings", prompt)
+            self.assertIn("beak", prompt)
+            self.assertIn("talons", prompt)
 
     def test_unknown_actor_route_is_rejected(self):
         source = (PROJECT_ROOT / "config/numan.toml").read_text(encoding="utf-8")

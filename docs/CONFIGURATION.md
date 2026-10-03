@@ -137,7 +137,10 @@ and are not rewritten by the prompt.
 
 Keep the prompt plain and direct. Important safety rules should remain, notably
 the instruction not to invent cocktail recipes and to output only speakable
-words. Test prompt changes with several open questions, not just `Hello`.
+words. The checked-in prompts also ground both characters as sentient macaws
+who tend bar at The Kraken's Curse, including their avian bodies and physical
+traits. Keep that identity grounding intact when editing personality details.
+Test prompt changes with several open questions, not just `Hello`.
 
 ### Adding a character
 
@@ -166,6 +169,9 @@ end_silence_ms = 750
 NUMAN supports the fully local `piper` and `kokoro` providers. Their models are
 loaded once when live mode starts and synthesis needs no network connection.
 `edge-tts` remains available as an optional compatibility provider.
+The checked-in profiles use Piper for both characters to minimize response
+latency. Polly's Kokoro profile remains configured as an optional quality-first
+choice; select it by changing `characters.polly.voice_profile`.
 
 A Piper profile instead uses `model`, optional `config`, `speaker`,
 `length_scale`, `noise_scale`, and `noise_w_scale`. A Kokoro profile uses
@@ -282,6 +288,9 @@ leave the sample rate at `16000` unless Andy changes the speech models.
 `end_silence_ms` is the quiet period that ends a question; lowering it improves
 response time but can clip a speaker who pauses between phrases. The supported
 range is 200–2000 ms, with 750 ms as the cross-platform default.
+The detector learns a low-biased ambient noise floor continuously before the
+wake word and during non-speech frames. Its threshold therefore follows steady
+room noise without treating a brief voice or clatter as the new baseline.
 
 The `[stt]` section controls speech-to-text. The normal local setup is:
 
@@ -414,7 +423,14 @@ its trigger language is an Andy/developer change.
 
 ## Cocktail recipes
 
-File: `data\cocktails\recipes.json`
+Files:
+
+- `data\krakens_curse\recipes.json`: owner-editable house specifications;
+- `data\cocktails\recipes.json`: generic reference specifications.
+
+House specifications are checked first and override a generic drink with the
+same normalized name or alias. Put venue recipes in the Kraken's Curse file so
+upstream reference-data updates do not overwrite Rob's approved builds.
 
 Recipes are shared by all characters and answered before the language model.
 Each recipe has this shape:
@@ -455,7 +471,29 @@ Test a recipe in safe mode:
 .\.venv\Scripts\numan.exe ask --character grog "What is in a Painkiller?"
 ```
 
-The result should report `"source": "structured"` and does not need `--live`.
+The result should report `"source": "structured_lookup"` and does not need
+`--live`.
+
+The operator's complete phrase matrix in `docs\ROB-GUIDE.md` covers exact
+caches, pools, recipes, character routines, presentation cues, semantic show
+actions, Ollama fallback, both wake targets, and noisy-room capture. Run that
+checklist after changing dispatch data, voice profiles, microphone behavior, or
+show-control configuration.
+
+## Kraken's Curse venue lore
+
+File: `data\krakens_curse\lore.json`
+
+Venue history, named objects, recurring stories, house rules, and other stable
+facts belong here rather than in the language-model prompt. Each entry has a
+unique `id`, unique question `aliases`, provenance in `source`, and concise
+spoken `responses` keyed by `grog`, `polly`, or `default`. Lore is matched
+before cocktail lookup and Ollama and reports `"source": "venue_lore"`.
+
+Run `numan knowledge status` after every lore or house-recipe edit, then run
+`numan voice cache build` so the validated deterministic answers are ready
+without synthesis delay. See `docs\ROB-GUIDE.md` for copyable JSON examples and
+the operator workflow.
 
 ## Drink-presentation cues
 

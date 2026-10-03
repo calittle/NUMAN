@@ -71,6 +71,28 @@ class JsonCocktailProvider:
     def responses(self) -> tuple[str, ...]:
         return tuple(format_recipe(recipe) for recipe in self._unique_recipes)
 
+    @property
+    def recipes(self) -> tuple[CocktailRecipe, ...]:
+        return self._unique_recipes
+
+
+class LayeredCocktailProvider:
+    """Look up house specifications before the generic reference catalog."""
+
+    def __init__(self, *providers: JsonCocktailProvider) -> None:
+        self.providers = providers
+
+    async def lookup(self, query: str, character: Character) -> str | None:
+        for provider in self.providers:
+            if response := await provider.lookup(query, character):
+                return response
+        return None
+
+    def responses(self) -> tuple[str, ...]:
+        return tuple(dict.fromkeys(
+            response for provider in self.providers for response in provider.responses()
+        ))
+
 
 def _recipe_key(value: str) -> str:
     key = stable_text(value)

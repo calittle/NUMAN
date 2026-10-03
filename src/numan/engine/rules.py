@@ -11,6 +11,7 @@ from .normalization import extract_drink_query, routine_text, stable_text
 from .policy import CharacterDispatchPolicy
 from .providers import LLMProvider, StructuredDataProvider
 from numan.conversations import ConversationKey, InMemoryConversationStore
+from numan.lore import JsonLoreProvider
 from .repositories import ExactCacheRepository, ResponsePoolRepository
 
 ResponseFactory = Callable[[Utterance, Character], ResponsePlan | Awaitable[ResponsePlan]]
@@ -190,6 +191,24 @@ class ProviderStructuredLookupRule:
             return None
         text = await self.provider.lookup(query, character)
         return _plan(utterance, ResponseSource.STRUCTURED_LOOKUP, text=text) if text else None
+
+
+@dataclass(slots=True)
+class VenueLoreRule:
+    provider: JsonLoreProvider
+    name: str = "venue_lore"
+
+    async def evaluate(self, utterance: Utterance, character: Character):
+        match = await self.provider.lookup(utterance.text, character)
+        if match is None:
+            return None
+        text, entry = match
+        return _plan(
+            utterance,
+            ResponseSource.VENUE_LORE,
+            text=text,
+            metadata={"lore_id": entry.id, "source": entry.source},
+        )
 
 
 @dataclass(slots=True)
