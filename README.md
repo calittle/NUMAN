@@ -251,8 +251,8 @@ unit = 1
 circuit = 2
 ```
 
-Every allowed action must have a mapping, and network (0–15), unit (1–240),
-and circuit (1–512) ranges are validated at startup. `numan show status`
+Every allowed action must have a mapping, and network (0â€“15), unit (1â€“240),
+and circuit (1â€“512) ranges are validated at startup. `numan show status`
 prints the complete destination and mapping without sending anything. Normal
 safe mode always substitutes the fake recorder; only `--live` or a live API
 runtime enables UDP transmission. OSC uses UDP and does not acknowledge cue
@@ -381,6 +381,8 @@ before Ollama; house drink specifications route before the generic cocktail
 catalog. Rebuild the voice cache after content changes.
 The initial content pack contains 17 Grimoire-derived lore topics and all nine
 Pactbound cocktail recipes, including preparation methods and source labels.
+
+Kraken's Curse lore is answered verbatim from `data/krakens_curse/lore.json` before generic character responses. Owner-editable `topics` catch reworded questions and named lore subjects. Ambiguous subjects and implicit lore follow-ups use the stored `unknown_lore` response instead of model invention. Later LLM requests omit conversation history through the most recent lore exchange. Topic matching is deterministic; add aliases or topics when introducing new lore names.
 
 ## Acknowledgments
 

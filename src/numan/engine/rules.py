@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+import re
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 
@@ -196,10 +197,23 @@ class ProviderStructuredLookupRule:
 @dataclass(slots=True)
 class VenueLoreRule:
     provider: JsonLoreProvider
+    conversations: InMemoryConversationStore | None = None
     name: str = "venue_lore"
 
     async def evaluate(self, utterance: Utterance, character: Character):
         match = await self.provider.lookup(utterance.text, character)
+        if match is None and self.conversations is not None:
+            history = await self.conversations.history(
+                ConversationKey(character.id, utterance.conversation_id))
+            previous = list(history)
+            if previous and previous[-1].role == "user" and previous[-1].text == utterance.text:
+                previous.pop()
+            approved = self.provider.responses(character.id)
+            if previous and previous[-1].role == "assistant" and previous[-1].text in approved:
+                query = stable_text(utterance.text)
+                if re.search(r"\b(it|its|he|his|she|her|they|them|their|that|those|there|here)\b", query) or re.match(
+                    r"(?:and |why\b|how so\b|tell me more\b|go on\b|what else\b|what happened next\b)", query):
+                    match = self.provider.unknown(character)
         if match is None:
             return None
         text, entry = match
@@ -216,6 +230,7 @@ class ProviderLLMFallbackRule:
     provider: LLMProvider
     conversations: InMemoryConversationStore | None = None
     name: str = "llm_fallback"
+    venue_lore: JsonLoreProvider | None = None
 
     async def evaluate(self, utterance: Utterance, character: Character):
         history = ()
@@ -223,6 +238,13 @@ class ProviderLLMFallbackRule:
             history = await self.conversations.history(
                 ConversationKey(character.id, utterance.conversation_id)
             )
+        if self.venue_lore is not None:
+            approved = self.venue_lore.responses(character.id)
+            # Drop history through the last lore exchange, including follow-ups.
+            last_lore = max((index for index, turn in enumerate(history)
+                             if self.venue_lore.is_related(turn.text)
+                             or turn.text in approved), default=-1)
+            history = history[last_lore + 1:]
         stream = getattr(self.provider, "stream", None)
         if stream is not None:
             return _plan(

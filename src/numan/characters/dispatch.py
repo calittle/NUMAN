@@ -40,10 +40,10 @@ def build_character_dispatcher(
         RepositoryResponsePoolRule(response_pools, **keyword),
     ]
     if venue_lore is not None:
-        rules.append(VenueLoreRule(venue_lore))
+        rules.insert(0, VenueLoreRule(venue_lore, conversations))
     rules.extend((
         ProviderStructuredLookupRule(structured_data),
-        ProviderLLMFallbackRule(llm, conversations),
+        ProviderLLMFallbackRule(llm, conversations, venue_lore=venue_lore),
     ))
     if drink_presentations is not None:
         rules.insert(0, DrinkPresentationRule(drink_presentations, **keyword))

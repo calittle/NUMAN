@@ -11,7 +11,12 @@
     "responses": {
       "grog": "The Kraken's Curse first appeared to survivors of a ship dragged under by the Kraken. They found this wreckwood tavern waiting on an unmapped island, lamps lit and bottles full.",
       "polly": "The Kraken's Curse appeared after the sea swallowed a ship and left a handful of survivors on an unmapped island. No one built the tavern; it was simply waiting for them."
-    }
+    },
+    "topics": [
+      "krakens curse",
+      "this bar",
+      "the tavern"
+    ]
   },
   {
     "id": "nature_of_the_kraken",
@@ -25,7 +30,10 @@
     "responses": {
       "grog": "The Kraken is no common beast, mate. It is a forgotten god of the deep that feeds on what hearts carry: joy, grief, ambition, despair, hope, and love.",
       "polly": "The Kraken is an ancient god of the deep, older than maps or named gods. It is drawn to longing and feeds on the feelings mortals carry in their hearts."
-    }
+    },
+    "topics": [
+      "kraken"
+    ]
   },
   {
     "id": "finding_the_bar",
@@ -43,7 +51,11 @@
     "responses": {
       "grog": "You do not find this bar. It finds the lost and uncertain when they reach a crossroads, appearing through storm, mist, or a door that was not there yesterday.",
       "polly": "The Kraken's Curse chooses people who are lost or standing at a crossroads. It may appear on a reef, in an unfamiliar alley, or behind a familiar door that suddenly leads somewhere else."
-    }
+    },
+    "topics": [
+      "find the bar",
+      "bar move"
+    ]
   },
   {
     "id": "inside_the_bar",
@@ -57,7 +69,11 @@
     "responses": {
       "grog": "Dark salt-soaked timbers, barnacle-bitten beams, and bottles from every age and ocean. The air smells of brine and citrus, with a storm forever thinking about starting.",
       "polly": "The tavern is built from dark wreckwood and barnacled beams, with impossible bottles lining the shelves. It smells of brine, citrus, and the electric hush before a storm."
-    }
+    },
+    "topics": [
+      "inside the bar",
+      "wreckwood"
+    ]
   },
   {
     "id": "service_and_price",
@@ -72,7 +88,12 @@
     "responses": {
       "grog": "There is no menu, and coin is not the currency. The bar serves what you need, then takes a memory, a dream, a fear spoken aloud, or some other price exact enough to hurt.",
       "polly": "There is no menu here; guests are served what they need. Payment may be a memory, a dream, or a fear finally spoken aloud, and every price is collected."
-    }
+    },
+    "topics": [
+      "menu",
+      "pay for drinks",
+      "drinks cost"
+    ]
   },
   {
     "id": "leaving_the_bar",
@@ -86,7 +107,11 @@
     "responses": {
       "grog": "Walk out the way you came, if the door still agrees. Time runs strangely here, and some guests return with only a taste of lime and red smoke while others carry the Kraken's mark.",
       "polly": "You leave through the same door, but time may have moved differently outside. Some remember only fragments; a rare few return changed and bearing the Kraken's mark."
-    }
+    },
+    "topics": [
+      "leave the bar",
+      "time here"
+    ]
   },
   {
     "id": "the_pactbound_nine",
@@ -101,7 +126,11 @@
     "responses": {
       "grog": "The Pactbound Nine were guests whose deepest needs drew the Kraken's notice. Each was compelled to create and drink a cocktail embodying that longing, sealing a boon and an exacting price.",
       "polly": "Nine guests were chosen to craft drinks from their own longing, memory, pain, and sacrifice. Drinking sealed each pact: the Kraken granted the wish, but no one left untouched."
-    }
+    },
+    "topics": [
+      "pactbound",
+      "nine drinks"
+    ]
   },
   {
     "id": "pact_chalice_of_the_forsaken",
@@ -114,7 +143,12 @@
     "source": "Krakens_Curse_Grimoire.pdf, The Pact of Sister Mairead Solène",
     "responses": {
       "default": "Sister Mairead Solène forged the Chalice of the Forsaken to save a plague-stricken ship. It grants clarity and healing in crisis, but its drinker gives up the comfort of certainty and walks the path alone."
-    }
+    },
+    "topics": [
+      "chalice of the forsaken",
+      "mairead",
+      "solene"
+    ]
   },
   {
     "id": "pact_gift_of_the_grove",
@@ -127,7 +161,12 @@
     "source": "Krakens_Curse_Grimoire.pdf, The Pact of Aina of Nalu‘ea",
     "responses": {
       "default": "Aina of Nalu‘ea gave her singing voice so the sacred grove could rise against invaders. The Gift of the Grove restores life and protects what is sacred, but takes a treasured song, story, or tradition."
-    }
+    },
+    "topics": [
+      "gift of the grove",
+      "aina",
+      "naluea"
+    ]
   },
   {
     "id": "pact_lovers_return",
@@ -140,7 +179,12 @@
     "source": "Krakens_Curse_Grimoire.pdf, The Pact of Elira, the Widow of the Spring Tide",
     "responses": {
       "default": "Elira surrendered the dance itself for one final night with her lost love, Isara. A Lover's Return summons the one you lost for a perfect dance, then leaves the drinker unable to dance again."
-    }
+    },
+    "topics": [
+      "lovers return",
+      "elira",
+      "isara"
+    ]
   },
   {
     "id": "pact_last_man",
@@ -153,7 +197,11 @@
     "source": "Krakens_Curse_Grimoire.pdf, The Pact of Captain Datura, the Forsaken Commander",
     "responses": {
       "default": "Captain Datura traded the comfort of blind obedience for a path that saved his people. The Last Man grants courage and moral clarity, but leaves authority forever shadowed by distrust."
-    }
+    },
+    "topics": [
+      "the last man",
+      "datura"
+    ]
   },
   {
     "id": "pact_still_path",
@@ -166,7 +214,11 @@
     "source": "Krakens_Curse_Grimoire.pdf, The Pact of Rei Takamura, the Rusted Blade",
     "responses": {
       "default": "Rei Takamura surrendered her sword, speed, and art to expose the truth and end a war. The Still Path grants perfect equilibrium, but loosens the drinker's mastery of weapons."
-    }
+    },
+    "topics": [
+      "still path",
+      "rei takamura"
+    ]
   },
   {
     "id": "pact_moments_embrace",
@@ -179,7 +231,11 @@
     "source": "Krakens_Curse_Grimoire.pdf, The Pact of Amara the Seer, Who Looked Away",
     "responses": {
       "default": "Amara surrendered her sight of tomorrow to escape the terror of every possible future. The Moment's Embrace frees its drinker from fear and divination, but steals all memory of the enchanted hour."
-    }
+    },
+    "topics": [
+      "moments embrace",
+      "amara"
+    ]
   },
   {
     "id": "pact_krakens_curse",
@@ -192,7 +248,11 @@
     "source": "Krakens_Curse_Grimoire.pdf, The Pact of Captain Tiber Malvayne, the Bound Steward of the Deep",
     "responses": {
       "default": "Captain Tiber Malvayne begged the Kraken for survival and offered his service. The Kraken's Curse preserves life against death, but bound the slaver to the bar as its servant."
-    }
+    },
+    "topics": [
+      "tiber",
+      "malvayne"
+    ]
   },
   {
     "id": "pact_bitter_reprieve",
@@ -205,7 +265,11 @@
     "source": "Krakens_Curse_Grimoire.pdf, The Pact of Lord Marik, the Butcher King",
     "responses": {
       "default": "Lord Marik poured his ambition, name, and future into the Bitter Reprieve to seize a crown. It grants ruthless victory, then turns ambition into poison and lays the victor low."
-    }
+    },
+    "topics": [
+      "bitter reprieve",
+      "marik"
+    ]
   },
   {
     "id": "pact_maelstroms_fury",
@@ -218,7 +282,11 @@
     "source": "Krakens_Curse_Grimoire.pdf, The Pact of Seraphine of the Drowned Tongue",
     "responses": {
       "default": "Seraphine offered body, mind, and soul to wield the Kraken's strength. The Maelstrom's Fury grants terrible power, but hollows its drinker until only the Kraken's storming voice remains."
-    }
+    },
+    "topics": [
+      "maelstroms fury",
+      "seraphine"
+    ]
   },
   {
     "id": "price_of_a_wish",
@@ -232,6 +300,26 @@
     "responses": {
       "grog": "The Kraken does not tempt; it waits for the crack where longing gets in. Every bargain is fair and every cost exact, but you get what you asked for, never what you expected.",
       "polly": "The Kraken waits until someone asks with perfect clarity. It may take certainty, voice, joy, freedom, or the past; every cost is exact, and every wish changes the one who made it."
+    },
+    "topics": [
+      "krakens bargains",
+      "price of a wish"
+    ]
+  },
+  {
+    "id": "unknown_lore",
+    "aliases": [
+      "unrecorded krakens curse lore"
+    ],
+    "topics": [
+      "lore",
+      "grimoire",
+      "pact",
+      "pacts"
+    ],
+    "source": "Owner lore routing policy",
+    "responses": {
+      "default": "That detail isn't recorded in our Kraken's Curse lore. Ask me about the tavern, the Kraken, or the Pactbound Nine."
     }
   }
 ]
